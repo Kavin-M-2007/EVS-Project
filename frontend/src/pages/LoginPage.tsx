@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Lock, Mail, Eye, EyeOff, ArrowRight, Sparkles, Leaf } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowRight, Leaf } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DemoCredentialsBar } from '../components/common/DemoCredentialsBar';
 
@@ -203,7 +203,6 @@ export const LoginPage: React.FC = () => {
           <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
             <span>Enterprise Multi-Tenant</span>
             <div className="flex items-center gap-1 text-emerald-700 font-medium">
-              <Sparkles className="w-3 h-3" />
               <span>EcoSort AI v2.0</span>
             </div>
           </div>

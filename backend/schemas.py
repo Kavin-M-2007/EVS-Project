@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 from datetime import datetime
 
 # Auth Schemas
@@ -13,7 +13,7 @@ class LoginRequest(BaseModel):
     password: str
 
 class PasswordResetRequest(BaseModel):
-    user_id: int
+    user_id: Union[int, str]
     new_password: str
 
 # User Schemas
@@ -22,7 +22,7 @@ class UserBase(BaseModel):
     full_name: str
     employee_id: str
     role: str
-    municipality_id: Optional[int] = None
+    municipality_id: Optional[Union[int, str]] = None
     assigned_area: Optional[str] = None
     phone_number: Optional[str] = None
     status: Optional[str] = "ACTIVE"
@@ -35,14 +35,14 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     employee_id: Optional[str] = None
     role: Optional[str] = None
-    municipality_id: Optional[int] = None
+    municipality_id: Optional[Union[int, str]] = None
     assigned_area: Optional[str] = None
     phone_number: Optional[str] = None
     status: Optional[str] = None
     password: Optional[str] = None
 
 class UserResponse(UserBase):
-    id: int
+    id: Union[int, str]
     created_at: datetime
     last_login: Optional[datetime] = None
     municipality_name: Optional[str] = None
@@ -64,7 +64,7 @@ class MunicipalityCreate(MunicipalityBase):
     pass
 
 class MunicipalityResponse(MunicipalityBase):
-    id: int
+    id: Union[int, str]
     created_at: datetime
     total_bins: Optional[int] = 0
     active_collectors: Optional[int] = 0
@@ -75,7 +75,7 @@ class MunicipalityResponse(MunicipalityBase):
 # Smart Bin Schemas
 class SmartBinBase(BaseModel):
     bin_code: str
-    municipality_id: int
+    municipality_id: Optional[Union[int, str]] = 1
     location_name: str
     latitude: float
     longitude: float
@@ -100,7 +100,7 @@ class SmartBinUpdate(BaseModel):
     weight_kg: Optional[float] = None
 
 class SmartBinResponse(SmartBinBase):
-    id: int
+    id: Union[int, str]
     last_collection_time: Optional[datetime] = None
     updated_at: datetime
     municipality_name: Optional[str] = None
@@ -110,10 +110,10 @@ class SmartBinResponse(SmartBinBase):
 
 # Collection Task Schemas
 class CollectionTaskBase(BaseModel):
-    municipality_id: int
-    collector_id: int
-    vehicle_id: Optional[int] = None
-    route_id: Optional[int] = None
+    municipality_id: Optional[Union[int, str]] = 1
+    collector_id: Union[int, str]
+    vehicle_id: Optional[Union[int, str]] = None
+    route_id: Optional[Union[int, str]] = None
     area_name: str = "Sector 1"
     priority: str = "MEDIUM"
     notes: Optional[str] = None
@@ -125,10 +125,10 @@ class CollectionTaskStatusUpdate(BaseModel):
     status: str  # Assigned, Accepted, In Progress, Collected, Completed
     notes: Optional[str] = None
     proof_image_url: Optional[str] = None
-    bins_collected: Optional[List[int]] = None
+    bins_collected: Optional[List[Union[int, str]]] = None
 
 class CollectionTaskResponse(CollectionTaskBase):
-    id: int
+    id: Union[int, str]
     task_code: str
     status: str
     assigned_at: datetime
@@ -146,7 +146,7 @@ class CollectionTaskResponse(CollectionTaskBase):
 
 # Classification Schemas
 class ClassificationResponse(BaseModel):
-    id: Optional[int] = None
+    id: Optional[Union[int, str]] = None
     binary_category: str  # Biodegradable, Non-Biodegradable
     broad_category: str   # Plastic, Organic, Paper, Metal, Glass, E-Waste, Textile, Hazardous, Medical
     fine_class: str       # e.g., PET Plastic Bottle
@@ -159,16 +159,16 @@ class ClassificationResponse(BaseModel):
 
 # Route Optimization Schemas
 class RouteOptimizeRequest(BaseModel):
-    municipality_id: int
-    bin_ids: List[int]
-    vehicle_id: Optional[int] = None
-    collector_id: Optional[int] = None
+    municipality_id: Optional[Union[int, str]] = 1
+    bin_ids: List[Union[int, str]]
+    vehicle_id: Optional[Union[int, str]] = None
+    collector_id: Optional[Union[int, str]] = None
     start_lat: Optional[float] = None
     start_lng: Optional[float] = None
 
 class RouteWaypoint(BaseModel):
     order: int
-    bin_id: int
+    bin_id: Union[int, str]
     bin_code: str
     location_name: str
     latitude: float
@@ -192,7 +192,7 @@ class ComplaintCreate(BaseModel):
     citizen_name: str
     citizen_phone: Optional[str] = None
     citizen_email: Optional[str] = None
-    municipality_id: int
+    municipality_id: Optional[Union[int, str]] = 1
     complaint_type: str
     description: str
     location_name: str
@@ -201,7 +201,7 @@ class ComplaintCreate(BaseModel):
     photo_url: Optional[str] = None
 
 class ComplaintResponse(ComplaintCreate):
-    id: int
+    id: Union[int, str]
     ticket_number: str
     status: str
     created_at: datetime
@@ -213,7 +213,7 @@ class ComplaintResponse(ComplaintCreate):
 
 # Notification Schemas
 class NotificationResponse(BaseModel):
-    id: int
+    id: Union[int, str]
     title: str
     message: str
     notification_type: str
@@ -226,7 +226,7 @@ class NotificationResponse(BaseModel):
 
 # Audit Log Schema
 class AuditLogResponse(BaseModel):
-    id: int
+    id: Union[int, str]
     user_email: Optional[str] = None
     user_role: Optional[str] = None
     action: str

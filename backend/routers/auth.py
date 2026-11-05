@@ -89,7 +89,11 @@ def reset_password(
     db: Session = Depends(get_db)
 ):
     # Only Super Admin or Admin managing their municipality or the user himself can reset password
-    target_user = db.query(models.User).filter(models.User.id == req.user_id).first()
+    if str(req.user_id).isdigit():
+        target_user = db.query(models.User).filter(models.User.id == int(req.user_id)).first()
+    else:
+        target_user = db.query(models.User).filter(models.User.email == str(req.user_id).lower()).first()
+
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found.")
 

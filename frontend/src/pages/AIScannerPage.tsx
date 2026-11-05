@@ -5,7 +5,6 @@ import {
   Camera,
   CheckCircle,
   AlertCircle,
-  Sparkles,
   ArrowRight,
   RefreshCw,
   Info,
@@ -213,7 +212,7 @@ export const AIScannerPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Camera className="w-4 h-4" />
                   <span>Run AI Classification</span>
                 </>
               )}
@@ -243,6 +242,19 @@ export const AIScannerPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4 my-4 text-xs"
               >
+                {/* Notice if awaiting GEMINI_API_KEY */}
+                {(result as any).model_mode === 'SERVICE_UNAVAILABLE_AWAITING_CONFIG' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold block text-xs">AI Vision Model Key Required</span>
+                      <span className="text-[11px] text-amber-800">
+                        To enable live vision inference, provide a valid <code>GEMINI_API_KEY</code> in <code>backend/.env</code>.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Primary Category Banner */}
                 <div className="p-4 rounded-2xl bg-[#F5F6F4] border border-[#E7EBE7]">
                   <div className="flex items-center justify-between">
@@ -284,7 +296,6 @@ export const AIScannerPage: React.FC = () => {
                 {/* Recycling Transformation */}
                 <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
                   <h5 className="font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
                     <span>Recycling & Valorization</span>
                   </h5>
                   <p className="text-emerald-800 text-[11px] leading-relaxed">

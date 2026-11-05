@@ -29,7 +29,7 @@ export const CollectionsPage: React.FC = () => {
 
   // Form states for new task
   const [newArea, setNewArea] = useState('Sector 1 Commercial');
-  const [newCollectorId, setNewCollectorId] = useState<number | ''>('');
+  const [newCollectorId, setNewCollectorId] = useState<string | number | ''>('');
   const [newPriority, setNewPriority] = useState('MEDIUM');
   const [newNotes, setNewNotes] = useState('');
   const [loading, setLoading] = useState(true);
@@ -68,8 +68,8 @@ export const CollectionsPage: React.FC = () => {
 
     try {
       await api.createTask({
-        municipality_id: user?.municipality_id || 1,
-        collector_id: Number(newCollectorId),
+        municipality_id: user?.municipality_id || 'a0000000-0000-0000-0000-000000000001',
+        collector_id: newCollectorId,
         area_name: newArea,
         priority: newPriority,
         notes: newNotes
@@ -225,7 +225,7 @@ export const CollectionsPage: React.FC = () => {
                   <label className="block font-semibold text-slate-700 mb-1">Assign Collector:</label>
                   <select
                     value={newCollectorId}
-                    onChange={(e) => setNewCollectorId(Number(e.target.value))}
+                    onChange={(e) => setNewCollectorId(e.target.value || '')}
                     className="w-full bg-[#F5F6F4] p-2.5 rounded-xl border border-slate-200 focus:outline-none"
                   >
                     {collectors.map((c) => (

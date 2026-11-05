@@ -115,30 +115,45 @@ def create_collection_task(
 
 @router.patch("/tasks/{task_id}/status")
 def update_task_status(
-    task_id: int,
+    task_id: str,
     status_update: schemas.CollectionTaskStatusUpdate,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
-    task = db.query(models.CollectionTask).filter(models.CollectionTask.id == task_id).first()
+    query = db.query(models.CollectionTask)
+    if task_id.isdigit():
+        task = query.filter(models.CollectionTask.id == int(task_id)).first()
+    else:
+        task = query.filter(models.CollectionTask.task_code == task_id).first()
+
     if not task:
         raise HTTPException(status_code=404, detail="Task not found.")
 
     if current_user.role == "GARBAGE_COLLECTOR" and task.collector_id != current_user.id:
         raise HTTPException(status_code=403, detail="Cannot update another collector's task.")
 
-    valid_statuses = ["Assigned", "Accepted", "In Progress", "Collected", "Completed"]
-    if status_update.status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_statuses}")
+    status_str = status_update.status.strip()
+    status_upper = status_str.upper().replace(" ", "_")
 
-    task.status = status_update.status
+    canonical_map = {
+        "ASSIGNED": "Assigned",
+        "ACCEPTED": "Accepted",
+        "IN_PROGRESS": "In Progress",
+        "COLLECTED": "Collected",
+        "COMPLETED": "Completed"
+    }
+
+    if status_upper not in canonical_map:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be Assigned, Accepted, In Progress, Collected, or Completed")
+
+    task.status = canonical_map[status_upper]
     now = datetime.utcnow()
 
-    if status_update.status == "Accepted":
+    if status_upper == "ACCEPTED":
         task.accepted_at = now
-    elif status_update.status == "In Progress":
+    elif status_upper == "IN_PROGRESS":
         task.started_at = now
-    elif status_update.status in ("Collected", "Completed"):
+    elif status_upper in ("COLLECTED", "COMPLETED"):
         task.completed_at = now
         if status_update.proof_image_url:
             task.proof_image_url = status_update.proof_image_url
@@ -146,7 +161,11 @@ def update_task_status(
         # If specific bins were emptied in this task, reset their fill levels and record collection
         if status_update.bins_collected:
             for b_id in status_update.bins_collected:
-                bin_obj = db.query(models.SmartBin).filter(models.SmartBin.id == b_id).first()
+                bin_query = db.query(models.SmartBin)
+                if str(b_id).isdigit():
+                    bin_obj = bin_query.filter(models.SmartBin.id == int(b_id)).first()
+                else:
+                    bin_obj = bin_query.filter(models.SmartBin.bin_code == str(b_id).upper()).first()
                 if bin_obj:
                     # Record collection
                     rec = models.CollectionRecord(

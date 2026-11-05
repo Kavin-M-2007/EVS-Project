@@ -4,10 +4,18 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ecosort.db")
 
-# For SQLite, check_same_thread=False is needed for multi-threaded FastAPI workers
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+# Connection arguments and pooling
+engine_kwargs = {"pool_pre_ping": True}
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL (Supabase pooler / direct connection)
+    engine_kwargs["pool_recycle"] = 300
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

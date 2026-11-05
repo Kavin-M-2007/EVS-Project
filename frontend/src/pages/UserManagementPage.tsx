@@ -35,7 +35,7 @@ export const UserManagementPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [role, setRole] = useState<UserRole>('GARBAGE_COLLECTOR');
-  const [municipalityId, setMunicipalityId] = useState<number>(1);
+  const [municipalityId, setMunicipalityId] = useState<string | number>('a0000000-0000-0000-0000-000000000001');
   const [assignedArea, setAssignedArea] = useState('Sector 1');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('Admin@123');
@@ -351,7 +351,7 @@ export const UserManagementPage: React.FC = () => {
                     <select
                       value={municipalityId}
                       disabled={currentUser?.role !== 'SUPER_ADMIN'}
-                      onChange={(e) => setMunicipalityId(Number(e.target.value))}
+                      onChange={(e) => setMunicipalityId(e.target.value)}
                       className="w-full bg-[#F5F6F4] p-2.5 rounded-xl border border-slate-200 focus:outline-none disabled:opacity-75"
                     >
                       {municipalities.map((m) => (

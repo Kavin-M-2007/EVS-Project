@@ -14,13 +14,14 @@ def submit_complaint(
     db: Session = Depends(get_db)
 ):
     ticket = f"ECO-{uuid.uuid4().hex[:8].upper()}"
+    muni_id = int(comp_in.municipality_id) if str(comp_in.municipality_id).isdigit() else 1
 
     complaint = models.Complaint(
         ticket_number=ticket,
         citizen_name=comp_in.citizen_name.strip(),
         citizen_phone=comp_in.citizen_phone,
         citizen_email=comp_in.citizen_email,
-        municipality_id=comp_in.municipality_id,
+        municipality_id=muni_id,
         complaint_type=comp_in.complaint_type,
         description=comp_in.description.strip(),
         location_name=comp_in.location_name.strip(),

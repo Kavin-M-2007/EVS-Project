@@ -170,6 +170,17 @@ export const LiveCityMapPage: React.FC = () => {
 
   useEffect(() => {
     loadMapData();
+
+    // Subscribe to realtime bin changes
+    const unsubscribe = api.subscribeToBins?.(() => {
+      loadMapData();
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [loadMapData]);
 
   // 2. Initialize Leaflet Map centered at Peelamedu, Coimbatore
@@ -446,8 +457,10 @@ export const LiveCityMapPage: React.FC = () => {
           <div style="font-size: 12px; font-weight: 600; color: #1E293B;">Driver: ${veh.driver} (ID: ${veh.id})</div>
           <div style="font-size: 11px; color: #64748B; margin-bottom: 6px;">Zone: <b>${veh.zone}</b></div>
           <div style="background-color: #F8FAFC; border-radius: 8px; padding: 8px; font-size: 11px; line-height: 1.6;">
-            <div>Speed: <b>${veh.speedKmH} km/h</b> (Live Peelamedu GPS)</div>
+            <div>Speed: <b>${veh.speedKmH} km/h</b> (Simulated Route Progression)</div>
             <div>Current Load: <b>${veh.currentLoadKg} / ${veh.capacityKg} kg</b> (${Math.round((veh.currentLoadKg / veh.capacityKg) * 100)}%)</div>
+            <div style="font-size: 10px; color: #94A3B8; margin-top: 4px;">Hardware Telemetry: Awaiting Active Vehicle CAN/GPS Hardware Link</div>
+          </div>
             <div style="font-size: 10px; color: #94A3B8; margin-top: 4px;">Telemetry GPS: ${veh.currentLat.toFixed(4)}, ${veh.currentLng.toFixed(4)}</div>
           </div>
         </div>
@@ -633,6 +646,9 @@ export const LiveCityMapPage: React.FC = () => {
             </span>
             <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 font-mono">
               Peelamedu, Coimbatore (11.0260° N, 77.0100° E)
+            </span>
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              Fleet Movement: Simulated Dispatch Demo
             </span>
           </div>
           <h2 className="text-xl font-bold text-[#17231C] mt-1.5">

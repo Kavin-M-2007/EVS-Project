@@ -38,6 +38,7 @@ export const MonitorDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       try {
         const [binList, taskList, anData, compList] = await Promise.all([
@@ -46,6 +47,7 @@ export const MonitorDashboard: React.FC = () => {
           api.getAnalyticsOverview(user?.municipality_id || 1),
           api.getComplaints(),
         ]);
+        if (!isMounted) return;
         setBins(binList);
         setTasks(taskList);
         setAnalytics(anData);
@@ -53,14 +55,32 @@ export const MonitorDashboard: React.FC = () => {
       } catch (e) {
         console.error(e);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     loadData();
+
+    // Setup realtime subscription for monitoring updates
+    const unsubscribe = api.subscribeToBins?.((payload) => {
+      loadData();
+    });
+
+    return () => {
+      isMounted = false;
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [user]);
 
   const criticalBins = bins.filter(b => b.status === 'CRITICAL' || b.fill_level >= 85);
   const pendingComplaints = complaints.filter(c => c.status !== 'RESOLVED');
+  const recyclingEfficiency = analytics?.metrics?.recycling_efficiency_pct != null
+    ? `${analytics.metrics.recycling_efficiency_pct}%`
+    : '76.5%';
+  const totalWasteTonnes = analytics?.metrics?.total_waste_collected_kg != null
+    ? `${(analytics.metrics.total_waste_collected_kg / 1000).toFixed(1)} t`
+    : '12.8 t';
 
   return (
     <div className="space-y-6">
@@ -96,14 +116,14 @@ export const MonitorDashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Recycling Compliance"
-          value="76.5%"
+          value={recyclingEfficiency}
           subtitle="Target 70% statutory"
           badge="Verified A+"
           icon={<CheckCircle2 className="w-4 h-4 text-emerald-700" />}
         />
         <StatCard
           title="Gross Municipal Waste"
-          value="12.8 t"
+          value={totalWasteTonnes}
           subtitle="Total recorded tonnage"
           icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
         />

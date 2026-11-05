@@ -8,7 +8,6 @@ import {
   Clock,
   TrendingDown,
   ArrowRight,
-  Sparkles,
   MapPin,
   AlertCircle
 } from 'lucide-react';
@@ -21,8 +20,8 @@ export const RouteOptimizationPage: React.FC = () => {
   const { user } = useAuth();
   const [bins, setBins] = useState<SmartBin[]>([]);
   const [collectors, setCollectors] = useState<User[]>([]);
-  const [selectedBinIds, setSelectedBinIds] = useState<number[]>([]);
-  const [selectedCollectorId, setSelectedCollectorId] = useState<number | ''>('');
+  const [selectedBinIds, setSelectedBinIds] = useState<(string | number)[]>([]);
+  const [selectedCollectorId, setSelectedCollectorId] = useState<string | number | ''>('');
   const [optResult, setOptResult] = useState<RouteOptimizationResult | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [assignedMessage, setAssignedMessage] = useState('');
@@ -52,7 +51,7 @@ export const RouteOptimizationPage: React.FC = () => {
     initData();
   }, [user]);
 
-  const toggleBinSelection = (id: number) => {
+  const toggleBinSelection = (id: string | number) => {
     if (selectedBinIds.includes(id)) {
       setSelectedBinIds(selectedBinIds.filter(b => b !== id));
     } else {
@@ -76,9 +75,9 @@ export const RouteOptimizationPage: React.FC = () => {
 
     try {
       const res = await api.optimizeRoute({
-        municipality_id: user?.municipality_id || 1,
+        municipality_id: user?.municipality_id || 'a0000000-0000-0000-0000-000000000001',
         bin_ids: selectedBinIds,
-        collector_id: selectedCollectorId ? Number(selectedCollectorId) : undefined
+        collector_id: selectedCollectorId ? selectedCollectorId : undefined
       });
       setOptResult(res);
     } catch (e: any) {
@@ -96,9 +95,9 @@ export const RouteOptimizationPage: React.FC = () => {
 
     try {
       await api.createTask({
-        municipality_id: user?.municipality_id || 1,
-        collector_id: Number(selectedCollectorId),
-        area_name: 'Optimized Downtown Express Tour',
+        municipality_id: user?.municipality_id || 'a0000000-0000-0000-0000-000000000001',
+        collector_id: selectedCollectorId,
+        area_name: 'Optimized Peelamedu Collection Tour',
         priority: 'HIGH',
         notes: `Auto-generated TSP tour for ${optResult.total_bins} bins. Estimated duration: ${optResult.estimated_time_minutes} mins.`
       });
@@ -192,7 +191,7 @@ export const RouteOptimizationPage: React.FC = () => {
               </label>
               <select
                 value={selectedCollectorId}
-                onChange={(e) => setSelectedCollectorId(e.target.value ? Number(e.target.value) : '')}
+                onChange={(e) => setSelectedCollectorId(e.target.value || '')}
                 className="w-full bg-[#F5F6F4] text-xs font-medium text-slate-800 p-2.5 rounded-xl border border-slate-200 focus:outline-none"
               >
                 {collectors.map((c) => (
@@ -215,7 +214,7 @@ export const RouteOptimizationPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Navigation className="w-4 h-4" />
                   <span>Solve Optimal Route</span>
                 </>
               )}

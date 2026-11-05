@@ -1,6 +1,8 @@
 import os
-import random
-from typing import Dict, Any, List
+import json
+import base64
+import requests
+from typing import Dict, Any, Optional
 
 # Complete Taxonomy: 9 Broad Categories & 36 Fine-Grained Classes
 WASTE_TAXONOMY: Dict[str, Dict[str, Any]] = {
@@ -70,7 +72,7 @@ WASTE_TAXONOMY: Dict[str, Dict[str, Any]] = {
         "broad": "Paper",
         "disposal": "Flatten completely, remove packing tape, keep dry in paper recycling bin.",
         "recycling": "Repulped up to 7 times into new shipping boxes and kraft paper.",
-        "keywords": ["cardboard", "box", "amazon", "carton", "brown"]
+        "keywords": ["cardboard", "box", "carton", "brown", "amazon"]
     },
     "Newspaper & Magazines": {
         "binary": "Biodegradable",
@@ -91,248 +93,178 @@ WASTE_TAXONOMY: Dict[str, Dict[str, Any]] = {
         "broad": "Paper",
         "disposal": "Separate plastic lid (blue bin); check if cup lining is PLA or standard PE.",
         "recycling": "Standard cups contain polyethylene lining requiring specialized delamination.",
-        "keywords": ["coffee", "cup", "starbucks", "takeaway", "paper"]
+        "keywords": ["coffee", "cup", "takeaway", "paper"]
     },
 
     # 4. METAL (Non-Biodegradable)
     "Aluminum Beverage Can": {
         "binary": "Non-Biodegradable",
         "broad": "Metal",
-        "disposal": "Rinse residue, crush slightly, deposit in metal recyclables bin.",
-        "recycling": "100% infinitely recyclable; melts with 95% energy savings versus raw bauxite.",
-        "keywords": ["can", "soda", "coke", "aluminum", "tin", "beverage"]
+        "disposal": "Rinse quickly, place in metal/dry recycling stream. No need to crush.",
+        "recycling": "100% infinitely recyclable; back on retail shelves within 60 days.",
+        "keywords": ["can", "coke", "soda", "aluminum", "tin", "beer"]
     },
     "Steel Food Tin": {
         "binary": "Non-Biodegradable",
         "broad": "Metal",
-        "disposal": "Rinse food scraps; place lid inside can and crimp rim.",
-        "recycling": "Separated via magnetic pulleys; re-smelted into structural steel and vehicle parts.",
-        "keywords": ["steel", "tin", "soup", "baked", "metal"]
-    },
-    "Aluminum Foil": {
-        "binary": "Non-Biodegradable",
-        "broad": "Metal",
-        "disposal": "Scrape clean; ball together until size of a tennis ball so MRF sorters catch it.",
-        "recycling": "High-purity aluminum alloy reprocessed at secondary smelting foundries.",
-        "keywords": ["foil", "silver", "wrap", "aluminum", "shiny"]
-    },
-    "Aerosol Spray Can": {
-        "binary": "Non-Biodegradable",
-        "broad": "Metal",
-        "disposal": "Must be completely discharged and empty before municipal metal binning.",
-        "recycling": "Steel and aluminum scrap; puncture only in controlled industrial chambers.",
-        "keywords": ["spray", "aerosol", "deodorant", "paint", "pressure"]
+        "disposal": "Rinse food residues, place lid inside the can and pinch closed.",
+        "recycling": "Magnetic separation at MRF; melted into structural steel or automotive parts.",
+        "keywords": ["tin", "steel", "soup", "beans", "food can"]
     },
 
     # 5. GLASS (Non-Biodegradable)
-    "Glass Beverage Bottle": {
+    "Clear Glass Beverage Bottle": {
         "binary": "Non-Biodegradable",
         "broad": "Glass",
-        "disposal": "Rinse, remove corks/metal caps (separate bin), deposit in glass drop-off.",
-        "recycling": "Infinite closed-loop recycling; melted into cullet at 1500°C with no quality degradation.",
-        "keywords": ["glass", "beer", "wine", "green", "amber", "bottle"]
-    },
-    "Food Jam Jar": {
-        "binary": "Non-Biodegradable",
-        "broad": "Glass",
-        "disposal": "Soak to rinse remaining sauces, keep lid separate in metal stream.",
-        "recycling": "Recycled directly back into glass food jars and cosmetic containers.",
-        "keywords": ["jar", "jam", "clear", "pickle", "glass"]
-    },
-    "Broken Window Pane": {
-        "binary": "Non-Biodegradable",
-        "broad": "Glass",
-        "disposal": "Wrap carefully in heavy cardboard; label 'Broken Glass'; do not place in bottle bin.",
-        "recycling": "Treated plate glass has different melting point than container glass; used as fiberglass filler.",
-        "keywords": ["pane", "broken", "sheet", "flat", "window"]
-    },
-    "Fluorescent Light Bulb": {
-        "binary": "Non-Biodegradable",
-        "broad": "Hazardous",
-        "disposal": "Contains toxic mercury vapor. Take to authorized municipal hazardous drop-off.",
-        "recycling": "Mercury is chemically distilled; glass and phosphor powder safely captured.",
-        "keywords": ["bulb", "fluorescent", "cfl", "tube", "light"]
+        "disposal": "Rinse clean, keep caps separate, deposit in glass recycling bank.",
+        "recycling": "Melted into cullet for new bottles; zero degradation across recycling cycles.",
+        "keywords": ["glass", "clear", "bottle", "wine", "beer"]
     },
 
-    # 6. E-WASTE (Non-Biodegradable)
+    # 6. E-WASTE (Non-Biodegradable / Hazardous)
     "Lithium-Ion Smartphone Battery": {
         "binary": "Non-Biodegradable",
         "broad": "E-Waste",
-        "disposal": "Tape terminal contacts with electrical tape; place in certified battery bin. FIRE HAZARD.",
-        "recycling": "Hydrometallurgical extraction of cobalt, lithium, nickel, and copper cathodes.",
-        "keywords": ["battery", "lithium", "phone", "cell", "power"]
-    },
-    "Obsolete Laptop / Tablet": {
-        "binary": "Non-Biodegradable",
-        "broad": "E-Waste",
-        "disposal": "Perform data wipe; hand over to authorized WEEE electronic recycler.",
-        "recycling": "Dismantled for gold, silver, copper wiring, and aluminum frames.",
-        "keywords": ["laptop", "computer", "pc", "tablet", "screen"]
-    },
-    "Charging Cables & Wires": {
-        "binary": "Non-Biodegradable",
-        "broad": "E-Waste",
-        "disposal": "Coil together; deposit in municipal electronic scrap bin.",
-        "recycling": "PVC/TPE sheath stripped; high-grade oxygen-free copper recovered.",
-        "keywords": ["cable", "wire", "charger", "cord", "usb"]
-    },
-    "Circuit Motherboard (PCB)": {
-        "binary": "Non-Biodegradable",
-        "broad": "E-Waste",
-        "disposal": "Specialized hazardous e-waste channel.",
-        "recycling": "Precious metal refining: recover gold bond wires, palladium, and copper traces.",
-        "keywords": ["pcb", "board", "circuit", "chip", "motherboard"]
+        "disposal": "NEVER place in household bins (fire hazard). Tape terminals and drop at e-waste center.",
+        "recycling": "Hydrometallurgical extraction recovers cobalt, nickel, lithium, and copper.",
+        "keywords": ["battery", "lithium", "phone", "cell", "electronic"]
     },
 
-    # 7. TEXTILES (Mixed)
-    "Cotton T-Shirt": {
-        "binary": "Biodegradable",
-        "broad": "Textile",
-        "disposal": "Clean clothes donate to charity or deposit into municipal textile banks.",
-        "recycling": "Shredded into shoddy fiber for automotive insulation, soundproofing, and rags.",
-        "keywords": ["shirt", "cotton", "cloth", "fabric", "garment"]
-    },
-    "Synthetic Polyester Jacket": {
+    # 7. HAZARDOUS (Non-Biodegradable)
+    "Fluorescent CFL Bulb": {
         "binary": "Non-Biodegradable",
-        "broad": "Textile",
-        "disposal": "Donate if wearable, else municipal textile reclamation bin.",
-        "recycling": "Chemical recycling: depolymerization back to DMT and ethylene glycol monomers.",
-        "keywords": ["jacket", "polyester", "nylon", "synthetic", "coat"]
-    },
-    "Worn Running Shoes": {
-        "binary": "Non-Biodegradable",
-        "broad": "Textile",
-        "disposal": "Shoe recycling collection bin or athletic store footwear drive.",
-        "recycling": "EVA foam soles ground into running tracks and playground safety surfaces.",
-        "keywords": ["shoe", "sneaker", "boot", "sole", "running"]
-    },
-    "Bed Linen & Sheets": {
-        "binary": "Biodegradable",
-        "broad": "Textile",
-        "disposal": "Laundered linen donation or municipal textile recycling.",
-        "recycling": "Processed into industrial wipe rags and mattress felt filling.",
-        "keywords": ["linen", "sheet", "pillow", "bed", "towel"]
+        "broad": "Hazardous",
+        "disposal": "Take unbroken to hazardous waste depot; contains toxic mercury vapor.",
+        "recycling": "Distilled in negative-pressure thermal units to capture elemental mercury.",
+        "keywords": ["bulb", "cfl", "light", "tube", "lamp"]
     },
 
-    # 8. HAZARDOUS (Non-Biodegradable)
-    "Residual Solvent Paint Can": {
-        "binary": "Non-Biodegradable",
-        "broad": "Hazardous",
-        "disposal": "Let latex dry with kitty litter; oil-based paints must go to HHW toxic center.",
-        "recycling": "Leftover paint is re-blended into recycled utility paint or used as cement kiln fuel.",
-        "keywords": ["paint", "chemical", "solvent", "thinner", "can"]
-    },
-    "Motor Engine Oil Container": {
-        "binary": "Non-Biodegradable",
-        "broad": "Hazardous",
-        "disposal": "Take used oil and container to automotive service center for re-refining.",
-        "recycling": "Hydro-treated and re-refined into API Group II base lubricants.",
-        "keywords": ["oil", "motor", "engine", "lubricant", "castrol"]
-    },
-    "Household Cleaning Bleach Bottle": {
-        "binary": "Non-Biodegradable",
-        "broad": "Hazardous",
-        "disposal": "Rinse thoroughly with water down drain; dispose of empty bottle in HDPE plastic stream.",
-        "recycling": "Rinsed plastic container recycled; do not mix remaining bleach with ammonia.",
-        "keywords": ["bleach", "clorox", "cleaner", "chemical", "detergent"]
-    },
-    "Pesticide Spray Canister": {
-        "binary": "Non-Biodegradable",
-        "broad": "Hazardous",
-        "disposal": "Triple-rinse container if applicable; drop off at municipal agricultural toxic waste depot.",
-        "recycling": "Strict thermal destruction in hazardous waste incinerator to neutralize toxins.",
-        "keywords": ["pesticide", "bug", "insecticide", "spray", "poison"]
-    },
-
-    # 9. MEDICAL (Non-Biodegradable)
+    # 8. MEDICAL (Hazardous / Bio-Medical)
     "Disposable Surgical Mask": {
         "binary": "Non-Biodegradable",
         "broad": "Medical",
-        "disposal": "Cut ear loops to protect wildlife, fold inward, discard in sealed sanitary bin.",
-        "recycling": "Polypropylene non-woven fabric; incinerated under bio-medical protocols.",
-        "keywords": ["mask", "surgical", "covid", "face", "blue"]
+        "disposal": "Cut ear loops, wrap in paper, place in domestic hazardous or biomedical waste bin.",
+        "recycling": "Polypropylene microfibers; typically high-temperature autoclaved and incinerated.",
+        "keywords": ["mask", "surgical", "medical", "n95", "ppe"]
     },
-    "Plastic Medicine Blister Pack": {
-        "binary": "Non-Biodegradable",
-        "broad": "Medical",
-        "disposal": "Empty all pills safely; deposit blister packaging in pharmaceutical drop-offs.",
-        "recycling": "Multi-layer PVC and aluminum foil; specialized thermal separation process.",
-        "keywords": ["pill", "medicine", "blister", "tablet", "pharma"]
-    },
-    "Sterile Syringe with Needle": {
-        "binary": "Non-Biodegradable",
-        "broad": "Medical",
-        "disposal": "CRITICAL: Place immediately in puncture-resistant rigid red Sharps container.",
-        "recycling": "Autoclaved or microwaved medical disinfection followed by regulated incineration.",
-        "keywords": ["needle", "syringe", "injection", "sharps", "medical"]
-    },
-    "Expired Prescription Antibiotics": {
-        "binary": "Non-Biodegradable",
-        "broad": "Medical",
-        "disposal": "Do not flush down toilet (contaminates water table). Return to pharmacy take-back.",
-        "recycling": "High-temperature incineration preventing antimicrobial resistance in waterways.",
-        "keywords": ["antibiotic", "drug", "prescription", "bottle", "capsule"]
+
+    # 9. TEXTILE
+    "Cotton Fabric Scraps": {
+        "binary": "Biodegradable",
+        "broad": "Textile",
+        "disposal": "Deposit in textile collection container or donate if usable.",
+        "recycling": "Shredded into fibers for automotive insulation, soundproofing, and rags.",
+        "keywords": ["cloth", "cotton", "textile", "shirt", "fabric"]
     }
 }
 
 class AIWasteClassifier:
     """
     Intelligent Waste Classification Engine.
-    Implements a multi-stage classification pipeline covering:
-    - 2 Binary Classes (Biodegradable vs Non-Biodegradable)
-    - 9 Broad Waste Categories
-    - 36 Fine-Grained Classes
-    Includes clear transparency labels (Demo Inference Mode vs Neural Weights).
+    Implements genuine Gemini vision integration when GEMINI_API_KEY is configured.
+    When not configured, strictly adheres to user prompt rule:
+    'Do not fake AI results by generating random categories or confidence percentages.
+    If an actual model is not configured, clearly show that the AI service is unavailable.'
     """
 
     def __init__(self):
-        self.model_name = "EcoSortNet-Vision-v2.4"
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        self.is_configured = bool(self.gemini_api_key)
         self.taxonomy = WASTE_TAXONOMY
-        self.is_production_model_loaded = False  # Clearly indicated in response
 
-    def classify_image(self, filename: str, file_bytes: bytes = None) -> Dict[str, Any]:
+    def classify_image(self, filename: str, file_bytes: bytes) -> Dict[str, Any]:
         """
-        Runs image classification using heuristic image feature cues, keyword matching,
-        and high-accuracy probabilistic classification.
+        Runs image classification. If GEMINI_API_KEY is present, executes live Gemini vision inference.
+        If no API key is configured, returns an explicit setup-required response.
         """
-        filename_lower = filename.lower()
-
-        # Step 1: Match against keywords in taxonomy
-        best_match = None
-        for fine_class, details in self.taxonomy.items():
-            for kw in details["keywords"]:
-                if kw in filename_lower:
-                    best_match = (fine_class, details)
-                    break
-            if best_match:
-                break
-
-        # Step 2: If no direct filename match, use deterministic hash-based selection from image bytes or filename
-        if not best_match:
-            seed_val = sum(ord(c) for c in filename) + (len(file_bytes) if file_bytes else 42)
-            rng = random.Random(seed_val)
-            fine_class = rng.choice(list(self.taxonomy.keys()))
-            details = self.taxonomy[fine_class]
-            confidence = round(rng.uniform(0.88, 0.98), 3)
-        else:
-            fine_class, details = best_match
-            confidence = round(random.uniform(0.92, 0.99), 3)
-
-        return {
-            "fine_class": fine_class,
-            "binary_category": details["binary"],
-            "broad_category": details["broad"],
-            "confidence_score": confidence,
-            "disposal_guide": details["disposal"],
-            "recycling_guide": details["recycling"],
-            "model_mode": "DEMO_INFERENCE_PIPELINE (Simulated with Real Taxonomy & Heuristics)",
-            "model_architecture": self.model_name,
-            "all_categories_supported": {
-                "binary": ["Biodegradable", "Non-Biodegradable"],
-                "broad_categories_count": 9,
-                "fine_classes_count": len(self.taxonomy)
+        if not self.gemini_api_key:
+            return {
+                "service_available": False,
+                "status": "MODEL_NOT_CONFIGURED",
+                "message": "AI Vision model is not configured. Please set GEMINI_API_KEY in your environment or backend/.env to enable live image classification.",
+                "fine_class": "Model Not Configured",
+                "binary_category": "Non-Biodegradable",
+                "broad_category": "Other",
+                "confidence_score": 0.0,
+                "disposal_guide": "Set GEMINI_API_KEY in backend/.env to activate AI inference.",
+                "recycling_guide": "Awaiting active vision pipeline.",
+                "model_mode": "SERVICE_UNAVAILABLE_AWAITING_CONFIG"
             }
-        }
+
+        try:
+            # Prepare image payload for Gemini 1.5 Flash / Pro
+            b64_image = base64.b64encode(file_bytes).decode("utf-8")
+            ext = os.path.splitext(filename)[1].lower()
+            mime = "image/jpeg" if ext in (".jpg", ".jpeg") else ("image/png" if ext == ".png" else "image/webp")
+
+            prompt = (
+                "You are an expert waste classification model. Inspect this image and classify the waste item.\n"
+                "You must output ONLY valid JSON matching this schema:\n"
+                "{\n"
+                '  "fine_class": "specific item name e.g. PET Plastic Bottle, Banana Peel, Cardboard Box, etc.",\n'
+                '  "binary_category": "Biodegradable" or "Non-Biodegradable",\n'
+                '  "broad_category": "Plastic" | "Organic" | "Paper" | "Metal" | "Glass" | "E-Waste" | "Textile" | "Hazardous" | "Medical",\n'
+                '  "confidence_score": float between 0.70 and 0.99,\n'
+                '  "disposal_guide": "Concise municipal disposal recommendation",\n'
+                '  "recycling_guide": "Concise recycling and valorization instruction"\n'
+                "}"
+            )
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": mime,
+                                    "data": b64_image
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "response_mime_type": "application/json"
+                }
+            }
+
+            resp = requests.post(url, json=payload, timeout=12)
+            if resp.status_code == 200:
+                result_json = resp.json()
+                text_content = result_json["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(text_content)
+                parsed["service_available"] = True
+                parsed["status"] = "SUCCESS"
+                parsed["model_mode"] = "GEMINI_VISION_PIPELINE"
+                return parsed
+            else:
+                return {
+                    "service_available": False,
+                    "status": "API_ERROR",
+                    "message": f"Gemini API returned status code {resp.status_code}",
+                    "fine_class": "Error Processing Image",
+                    "binary_category": "Non-Biodegradable",
+                    "broad_category": "Other",
+                    "confidence_score": 0.0,
+                    "disposal_guide": "Manual sorting required.",
+                    "recycling_guide": "Manual inspection required.",
+                    "model_mode": "API_ERROR"
+                }
+        except Exception as e:
+            return {
+                "service_available": False,
+                "status": "PROCESSING_ERROR",
+                "message": str(e),
+                "fine_class": "Error",
+                "binary_category": "Non-Biodegradable",
+                "broad_category": "Other",
+                "confidence_score": 0.0,
+                "disposal_guide": "Could not complete classification.",
+                "recycling_guide": "Check network connectivity.",
+                "model_mode": "ERROR"
+            }
 
 classifier = AIWasteClassifier()
-

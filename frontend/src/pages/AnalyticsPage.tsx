@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import { Download, Calendar, Filter, Sparkles, TrendingUp, CheckCircle, Info } from 'lucide-react';
+import { Download, Calendar, Filter, Recycle, TrendingUp, CheckCircle, Info } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/common/StatCard';
@@ -116,7 +116,7 @@ export const AnalyticsPage: React.FC = () => {
           value={`${metrics.recycling_efficiency_pct}%`}
           subtitle="Statutory threshold 70%"
           badge="Exceeding Target"
-          icon={<Sparkles className="w-4 h-4 text-emerald-700" />}
+          icon={<Recycle className="w-4 h-4 text-emerald-700" />}
         />
         <StatCard
           title="Collection SLA Adherence"

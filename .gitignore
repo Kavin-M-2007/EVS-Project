@@ -1,0 +1,37 @@
+# Environment Variables
+.env
+*.env
+backend/.env
+frontend/.env
+*.env.local
+
+# Databases & SQLite
+*.db
+*.sqlite
+*.sqlite3
+ecosort.db
+backend/ecosort.db
+
+# Node dependencies & builds
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+backend/__pycache__/
+backend/*/__pycache__/
+venv/
+backend/venv/
+.pytest_cache/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+

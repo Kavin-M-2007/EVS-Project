@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Sparkles,
   ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +22,8 @@ export const CitizenPortalPage: React.FC = () => {
   const [complaintType, setComplaintType] = useState('Overflowing Bin');
   const [locationName, setLocationName] = useState('');
   const [description, setDescription] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<any>(null);
 
@@ -31,6 +32,14 @@ export const CitizenPortalPage: React.FC = () => {
   const [trackedResult, setTrackedResult] = useState<any>(null);
   const [trackError, setTrackError] = useState('');
   const [isTracking, setIsTracking] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,16 +50,25 @@ export const CitizenPortalPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      let uploadedPhotoUrl: string | undefined = undefined;
+      if (photoFile) {
+        try {
+          uploadedPhotoUrl = await api.uploadFile(photoFile, 'complaint-photos');
+        } catch (uploadErr) {
+          console.warn('Complaint photo upload notice, proceeding:', uploadErr);
+        }
+      }
+
       const res = await api.submitComplaint({
         citizen_name: citizenName,
         citizen_phone: citizenPhone,
         citizen_email: citizenEmail,
-        municipality_id: 1, // Coimbatore Municipal Corporation default
+        municipality_id: 'a0000000-0000-0000-0000-000000000001', // Coimbatore default
         complaint_type: complaintType,
         locationName: locationName,
         location_name: locationName,
         description: description,
-        photo_url: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80'
+        photo_url: uploadedPhotoUrl,
       });
       setSubmittedTicket(res);
       // Reset form
@@ -58,6 +76,8 @@ export const CitizenPortalPage: React.FC = () => {
       setCitizenPhone('');
       setLocationName('');
       setDescription('');
+      setPhotoFile(null);
+      setPhotoPreview(null);
     } catch (e: any) {
       alert(e.message || 'Failed to submit report.');
     } finally {
@@ -213,10 +233,34 @@ export const CitizenPortalPage: React.FC = () => {
                 />
               </div>
 
-              <div className="border border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50 text-center">
-                <Camera className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                <span className="text-slate-600 font-medium block">Attach Photograph Proof (Optional)</span>
-                <span className="text-[10px] text-slate-400">Photos help teams locate bins faster</span>
+              <div className="border border-dashed border-slate-300 rounded-2xl p-4 bg-slate-50 text-center relative hover:bg-slate-100 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  title="Upload photograph proof"
+                />
+                {photoPreview ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-14 h-14 object-cover rounded-xl border border-slate-300 shadow-xs"
+                    />
+                    <div className="text-left">
+                      <span className="text-xs font-semibold text-emerald-800 block">Photo Selected</span>
+                      <span className="text-[10px] text-slate-500">{photoFile?.name}</span>
+                      <span className="text-[10px] text-emerald-600 block mt-0.5">Click to replace photo</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Camera className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                    <span className="text-slate-600 font-medium block">Attach Photograph Proof (Optional)</span>
+                    <span className="text-[10px] text-slate-400">Click to select photo • Supports JPG, PNG, WEBP</span>
+                  </>
+                )}
               </div>
 
               <button

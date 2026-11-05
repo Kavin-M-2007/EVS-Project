@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Sparkles,
   TrendingUp,
   AlertTriangle,
   Lightbulb,
@@ -78,7 +77,6 @@ export const PredictionsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200">
-          <Sparkles className="w-4 h-4 text-emerald-600" />
           <span>Model Accuracy: {predictionData?.model_confidence_overall || 91.4}%</span>
         </div>
       </div>

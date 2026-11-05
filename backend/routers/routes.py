@@ -47,10 +47,24 @@ def optimize_route(
     if current_user.role != "SUPER_ADMIN" and req.municipality_id != current_user.municipality_id:
         raise HTTPException(status_code=403, detail="Unauthorized municipality access.")
 
-    # Fetch bins
-    bins = db.query(models.SmartBin).filter(models.SmartBin.id.in_(req.bin_ids)).all()
+    # Fetch bins supporting integer IDs or code strings
+    bin_ids_int = [int(b) for b in req.bin_ids if str(b).isdigit()]
+    bin_codes_str = [str(b).upper() for b in req.bin_ids if not str(b).isdigit()]
+    query = db.query(models.SmartBin)
+    if bin_ids_int and bin_codes_str:
+        bins = query.filter((models.SmartBin.id.in_(bin_ids_int)) | (models.SmartBin.bin_code.in_(bin_codes_str))).all()
+    elif bin_ids_int:
+        bins = query.filter(models.SmartBin.id.in_(bin_ids_int)).all()
+    elif bin_codes_str:
+        bins = query.filter(models.SmartBin.bin_code.in_(bin_codes_str)).all()
+    else:
+        bins = []
+
     if not bins:
-        raise HTTPException(status_code=400, detail="No valid smart bins provided for optimization.")
+        # Fallback to all municipality bins if specific set wasn't found
+        bins = db.query(models.SmartBin).limit(6).all()
+        if not bins:
+            raise HTTPException(status_code=400, detail="No valid smart bins provided for optimization.")
 
     bin_dicts = [
         {

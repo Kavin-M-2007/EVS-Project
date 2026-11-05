@@ -55,11 +55,16 @@ def list_smart_bins(
 
 @router.get("/{bin_id}")
 def get_bin_details(
-    bin_id: int,
+    bin_id: str,
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(get_db)
 ):
-    bin_obj = db.query(models.SmartBin).filter(models.SmartBin.id == bin_id).first()
+    query = db.query(models.SmartBin)
+    if bin_id.isdigit():
+        bin_obj = query.filter(models.SmartBin.id == int(bin_id)).first()
+    else:
+        bin_obj = query.filter(models.SmartBin.bin_code == bin_id.upper()).first()
+
     if not bin_obj:
         raise HTTPException(status_code=404, detail="Smart bin not found.")
 
@@ -68,12 +73,12 @@ def get_bin_details(
 
     # Recent sensor readings (last 10)
     readings = db.query(models.SensorReading).filter(
-        models.SensorReading.bin_id == bin_id
+        models.SensorReading.bin_id == bin_obj.id
     ).order_by(models.SensorReading.recorded_at.desc()).limit(12).all()
 
     # Recent collection history
     records = db.query(models.CollectionRecord).filter(
-        models.CollectionRecord.bin_id == bin_id
+        models.CollectionRecord.bin_id == bin_obj.id
     ).order_by(models.CollectionRecord.collected_at.desc()).limit(5).all()
 
     return {
@@ -219,4 +224,85 @@ def update_bin_telemetry(
     db.commit()
 
     return {"message": "Telemetry updated successfully", "status": bin_obj.status, "fill_level": bin_obj.fill_level}
+
+@router.put("/{bin_id}", response_model=schemas.SmartBinResponse)
+def update_smart_bin(
+    bin_id: str,
+    bin_in: schemas.SmartBinUpdate,
+    current_user: models.User = Depends(auth.require_roles(["SUPER_ADMIN", "ADMIN"])),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.SmartBin)
+    if bin_id.isdigit():
+        bin_obj = query.filter(models.SmartBin.id == int(bin_id)).first()
+    else:
+        bin_obj = query.filter(models.SmartBin.bin_code == bin_id.upper()).first()
+
+    if not bin_obj:
+        raise HTTPException(status_code=404, detail="Smart bin not found.")
+
+    if current_user.role != "SUPER_ADMIN" and bin_obj.municipality_id != current_user.municipality_id:
+        raise HTTPException(status_code=403, detail="Unauthorized to edit bins in this municipality.")
+
+    if bin_in.location_name is not None:
+        bin_obj.location_name = bin_in.location_name
+    if bin_in.waste_category is not None:
+        bin_obj.waste_category = bin_in.waste_category
+    if bin_in.fill_level is not None:
+        bin_obj.fill_level = bin_in.fill_level
+    if bin_in.status is not None:
+        bin_obj.status = bin_in.status
+    if bin_in.battery_level is not None:
+        bin_obj.battery_level = bin_in.battery_level
+    if bin_in.temperature_c is not None:
+        bin_obj.temperature_c = bin_in.temperature_c
+    if bin_in.weight_kg is not None:
+        bin_obj.weight_kg = bin_in.weight_kg
+
+    bin_obj.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(bin_obj)
+
+    return schemas.SmartBinResponse(
+        id=bin_obj.id,
+        bin_code=bin_obj.bin_code,
+        municipality_id=bin_obj.municipality_id,
+        location_name=bin_obj.location_name,
+        latitude=bin_obj.latitude,
+        longitude=bin_obj.longitude,
+        waste_category=bin_obj.waste_category,
+        fill_level=bin_obj.fill_level,
+        max_capacity_liters=bin_obj.max_capacity_liters,
+        status=bin_obj.status,
+        battery_level=bin_obj.battery_level,
+        temperature_c=bin_obj.temperature_c,
+        weight_kg=bin_obj.weight_kg,
+        last_collection_time=bin_obj.last_collection_time,
+        updated_at=bin_obj.updated_at,
+        municipality_name=bin_obj.municipality.name if bin_obj.municipality else ""
+    )
+
+@router.delete("/{bin_id}")
+def delete_smart_bin(
+    bin_id: str,
+    current_user: models.User = Depends(auth.require_roles(["SUPER_ADMIN", "ADMIN"])),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.SmartBin)
+    if bin_id.isdigit():
+        bin_obj = query.filter(models.SmartBin.id == int(bin_id)).first()
+    else:
+        bin_obj = query.filter(models.SmartBin.bin_code == bin_id.upper()).first()
+
+    if not bin_obj:
+        raise HTTPException(status_code=404, detail="Smart bin not found.")
+
+    if current_user.role != "SUPER_ADMIN" and bin_obj.municipality_id != current_user.municipality_id:
+        raise HTTPException(status_code=403, detail="Unauthorized to delete bins in this municipality.")
+
+    code = bin_obj.bin_code
+    db.delete(bin_obj)
+    db.commit()
+
+    return {"message": f"Smart bin {code} deleted successfully."}
 

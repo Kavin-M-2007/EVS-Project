@@ -7,7 +7,7 @@ interface NotificationContextType {
   notifications: NotificationItem[];
   unreadCount: number;
   refreshNotifications: () => Promise<void>;
-  markAsRead: (id: number) => Promise<void>;
+  markAsRead: (id: string | number) => Promise<void>;
   markAllAsRead: () => Promise<void>;
 }
 
@@ -32,11 +32,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     refreshNotifications();
-    const timer = setInterval(refreshNotifications, 20000);
-    return () => clearInterval(timer);
+    const unsubscribe = api.subscribeToNotifications(() => {
+      refreshNotifications();
+    });
+    const timer = setInterval(refreshNotifications, 30000);
+    return () => {
+      unsubscribe();
+      clearInterval(timer);
+    };
   }, [refreshNotifications]);
 
-  const markAsRead = async (id: number) => {
+  const markAsRead = async (id: string | number) => {
     try {
       await api.markNotificationRead(id);
       setNotifications(prev =>

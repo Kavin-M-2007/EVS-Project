@@ -116,12 +116,17 @@ def create_user(
 
 @router.patch("/{user_id}", response_model=schemas.UserResponse)
 def update_user(
-    user_id: int,
+    user_id: str,
     user_update: schemas.UserUpdate,
     current_user: models.User = Depends(auth.require_roles(["SUPER_ADMIN", "ADMIN"])),
     db: Session = Depends(get_db)
 ):
-    target_user = db.query(models.User).filter(models.User.id == user_id).first()
+    query = db.query(models.User)
+    if user_id.isdigit():
+        target_user = query.filter(models.User.id == int(user_id)).first()
+    else:
+        target_user = query.filter(models.User.email == user_id.lower()).first()
+
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found.")
 
