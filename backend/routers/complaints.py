@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -35,7 +35,7 @@ def submit_complaint(
     # Notify admin
     notif = models.Notification(
         role_target="ADMIN",
-        municipality_id=comp_in.municipality_id,
+        municipality_id=muni_id,
         title=f"New Citizen Complaint: {comp_in.complaint_type}",
         message=f"Ticket {ticket} submitted at {comp_in.location_name}: {comp_in.description[:80]}...",
         notification_type="DAMAGE_REPORT"
@@ -131,7 +131,7 @@ def update_complaint_status(
 
     comp.status = status
     if status == "RESOLVED":
-        comp.resolved_at = datetime.utcnow()
+        comp.resolved_at = datetime.now(timezone.utc)
     db.commit()
 
     return {"message": f"Complaint {comp.ticket_number} marked as {status}."}

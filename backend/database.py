@@ -1,8 +1,8 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ecosort.db")
+DATABASE_URL = settings.DATABASE_URL
 
 # Connection arguments and pooling
 engine_kwargs = {"pool_pre_ping": True}
@@ -26,4 +26,3 @@ def get_db():
         yield db
     finally:
         db.close()
-

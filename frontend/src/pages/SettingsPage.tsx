@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Shield, Bell, Building2, User, KeyRound, CheckCircle, Save } from 'lucide-react';
+import { CheckCircle, Save, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
@@ -10,10 +10,12 @@ export const SettingsPage: React.FC = () => {
   const [autoDispatch, setAutoDispatch] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    setSaveError('');
     try {
       if (newPassword) {
         await api.resetPassword(user.id, newPassword);
@@ -22,7 +24,8 @@ export const SettingsPage: React.FC = () => {
       setNewPassword('');
       setTimeout(() => setSaveSuccess(''), 4000);
     } catch (e: any) {
-      alert(e.message || 'Save failed.');
+      setSaveError(e.message || 'Save failed.');
+      setTimeout(() => setSaveError(''), 4000);
     }
   };
 
@@ -69,6 +72,13 @@ export const SettingsPage: React.FC = () => {
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-emerald-600" />
           <span>{saveSuccess}</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-xs font-semibold flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-red-600" />
+          <span>{saveError}</span>
         </div>
       )}
 

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "node --test tests/critical-flows.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -34,6 +35,7 @@
     "autoprefixer": "^10.6.2",
     "oxlint": "^1.90.0",
     "postcss": "^8.5.32",
+    "puppeteer-core": "^25.16.0",
     "tailwindcss": "^4.3.4",
     "typescript": "~7.0.2",
     "vite": "^8.3.6"

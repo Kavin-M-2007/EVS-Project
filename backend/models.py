@@ -3,6 +3,9 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Foreig
 from sqlalchemy.orm import relationship
 from database import Base
 
+def utcnow():
+    return datetime.datetime.now(datetime.timezone.utc)
+
 class Municipality(Base):
     __tablename__ = "municipalities"
 
@@ -14,7 +17,7 @@ class Municipality(Base):
     total_area_sqkm = Column(Float, default=150.0)
     population = Column(Integer, default=500000)
     contact_email = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     # Relationships
     users = relationship("User", back_populates="municipality")
@@ -47,7 +50,7 @@ class User(Base):
     assigned_area = Column(String(100), nullable=True)
     phone_number = Column(String(20), nullable=True)
     status = Column(String(20), default="ACTIVE")  # ACTIVE, INACTIVE, SUSPENDED
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     last_login = Column(DateTime, nullable=True)
 
     # Relationships
@@ -73,7 +76,7 @@ class SmartBin(Base):
     temperature_c = Column(Float, default=26.5)
     weight_kg = Column(Float, default=12.0)
     last_collection_time = Column(DateTime, nullable=True)
-    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
     municipality = relationship("Municipality", back_populates="bins")
@@ -90,7 +93,7 @@ class SensorReading(Base):
     temperature_c = Column(Float, nullable=False)
     weight_kg = Column(Float, nullable=False)
     battery_pct = Column(Float, default=95.0)
-    recorded_at = Column(DateTime, default=datetime.datetime.utcnow)
+    recorded_at = Column(DateTime, default=utcnow)
 
     bin = relationship("SmartBin", back_populates="sensor_readings")
 
@@ -108,7 +111,7 @@ class WasteClassification(Base):
     confidence_score = Column(Float, nullable=False)     # 0.0 to 1.0
     disposal_guide = Column(Text, nullable=False)
     recycling_guide = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     user = relationship("User", back_populates="classifications")
 
@@ -158,7 +161,7 @@ class CollectionTask(Base):
     area_name = Column(String(100), default="Sector 1")
     priority = Column(String(20), default="MEDIUM")  # HIGH, MEDIUM, LOW
     status = Column(String(30), default="Assigned")  # Assigned -> Accepted -> In Progress -> Collected -> Completed
-    assigned_at = Column(DateTime, default=datetime.datetime.utcnow)
+    assigned_at = Column(DateTime, default=utcnow)
     accepted_at = Column(DateTime, nullable=True)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
@@ -181,7 +184,7 @@ class CollectionRecord(Base):
     collector_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     weight_kg = Column(Float, default=25.0)
     fill_level_before = Column(Float, default=85.0)
-    collected_at = Column(DateTime, default=datetime.datetime.utcnow)
+    collected_at = Column(DateTime, default=utcnow)
     status = Column(String(20), default="COLLECTED")
 
     task = relationship("CollectionTask", back_populates="records")
@@ -195,7 +198,7 @@ class CollectorAssignment(Base):
     collector_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     vehicle_id = Column(Integer, ForeignKey("collection_vehicles.id"), nullable=True)
     route_id = Column(Integer, ForeignKey("collection_routes.id"), nullable=True)
-    shift_date = Column(DateTime, default=datetime.datetime.utcnow)
+    shift_date = Column(DateTime, default=utcnow)
     status = Column(String(20), default="SCHEDULED")
 
 
@@ -215,7 +218,7 @@ class Complaint(Base):
     longitude = Column(Float, nullable=True)
     photo_url = Column(String(500), nullable=True)
     status = Column(String(30), default="PENDING")  # PENDING, IN_PROGRESS, RESOLVED, REJECTED
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     resolved_at = Column(DateTime, nullable=True)
 
     municipality = relationship("Municipality", back_populates="complaints")
@@ -232,7 +235,7 @@ class Notification(Base):
     message = Column(Text, nullable=False)
     notification_type = Column(String(50), default="INFO")  # OVERFLOW_ALERT, TASK_ASSIGNED, TASK_COMPLETED, SYSTEM_ALERT, DAMAGE_REPORT
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 class Prediction(Base):
@@ -246,7 +249,7 @@ class Prediction(Base):
     high_waste_zones_json = Column(Text, default="[]")
     overflow_risk_bins_json = Column(Text, default="[]")
     recommendations_json = Column(Text, default="[]")
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 class AuditLog(Base):
@@ -261,5 +264,5 @@ class AuditLog(Base):
     entity_id = Column(String(50), nullable=True)
     details = Column(Text, nullable=True)
     ip_address = Column(String(50), default="127.0.0.1")
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 

@@ -1,17 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, Bell, Shield, LogOut, CheckCircle2 } from 'lucide-react';
+import { Search, Bell, Shield, LogOut, CheckCircle2, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 
-export const TopNavbar: React.FC = () => {
+interface TopNavbarProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export const TopNavbar: React.FC<TopNavbarProps> = ({ onToggleMobileMenu }) => {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifMenu(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -36,22 +56,33 @@ export const TopNavbar: React.FC = () => {
   const roleInfo = getRoleBadge(user?.role);
 
   return (
-    <header className="sticky top-4 z-30 px-6 max-w-7xl mx-auto w-full">
-      <div className="bg-white/90 backdrop-blur-md border border-[#E7EBE7] rounded-full px-5 py-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between gap-4">
+    <header className="sticky top-2 sm:top-4 z-30 px-3 sm:px-6 max-w-7xl mx-auto w-full">
+      <div className="bg-white/95 backdrop-blur-md border border-[#E7EBE7] rounded-full px-3.5 sm:px-5 py-2 sm:py-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between gap-2 sm:gap-4">
         {/* Left: Brand & Pill Nav Links */}
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-6 min-w-0">
+          {onToggleMobileMenu && (
+            <button
+              type="button"
+              onClick={onToggleMobileMenu}
+              className="md:hidden w-8 h-8 rounded-full border border-[#E7EBE7] flex items-center justify-center text-slate-700 hover:bg-slate-100 transition-colors flex-shrink-0"
+              aria-label="Open navigation sidebar"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+          )}
+
+          <NavLink to="/" aria-label="EcoSort Home" className="flex items-center gap-2 flex-shrink-0">
             <div className="w-8 h-8 rounded-full bg-[#166534] flex items-center justify-center text-white font-bold text-sm shadow-sm">
               E
             </div>
-            <div className="hidden sm:block">
-              <span className="font-semibold text-[#17231C] tracking-tight text-sm">
+            <div className="block">
+              <span className="font-semibold text-[#17231C] tracking-tight text-xs sm:text-sm">
                 EcoSort<span className="text-[#22C55E] ml-0.5">AI</span>
               </span>
             </div>
-          </div>
+          </NavLink>
 
-          {/* Quick Pill Navigation */}
+          {/* Quick Pill Navigation (visible on md+) */}
           <nav className="hidden md:flex items-center space-x-1 text-xs font-medium text-[#747D75]">
             <NavLink
               to={
@@ -61,7 +92,9 @@ export const TopNavbar: React.FC = () => {
                   ? '/dashboard/admin'
                   : user?.role === 'GARBAGE_COLLECTOR'
                   ? '/dashboard/collector'
-                  : '/dashboard/monitor'
+                  : user?.role === 'MUNICIPALITY_MONITOR'
+                  ? '/dashboard/monitor'
+                  : '/dashboard/super-admin'
               }
               className={({ isActive }) =>
                 `px-3 py-1.5 rounded-full transition-all ${
@@ -119,6 +152,7 @@ export const TopNavbar: React.FC = () => {
           <Search className="w-3.5 h-3.5 text-[#747D75] absolute left-3 pointer-events-none" />
           <input
             type="text"
+            aria-label="Search bins, tasks, zones"
             placeholder="Search bins, tasks, zones..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -127,20 +161,21 @@ export const TopNavbar: React.FC = () => {
         </div>
 
         {/* Right Controls: System Status, Notifications, Profile */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {/* System Status Pill */}
           <div className="hidden sm:flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-medium px-2.5 py-1 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Online • IoT Sync</span>
+            <span>Online</span>
           </div>
 
           {/* Notifications Button */}
-          <div className="relative">
+          <div className="relative" ref={notifRef}>
             <button
               onClick={() => {
                 setShowNotifMenu(!showNotifMenu);
                 setShowProfileMenu(false);
               }}
+              aria-label={`View notifications, ${unreadCount} unread`}
               className="w-8 h-8 rounded-full border border-[#E7EBE7] flex items-center justify-center text-[#17231C] hover:bg-slate-100 transition-colors relative"
             >
               <Bell className="w-3.5 h-3.5 text-slate-700" />
@@ -159,7 +194,7 @@ export const TopNavbar: React.FC = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-[#E7EBE7] p-3 z-50 overflow-hidden"
+                  className="absolute right-0 mt-3 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-[#E7EBE7] p-3 z-50 overflow-hidden"
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <span className="text-xs font-semibold text-slate-900">Notifications ({unreadCount} new)</span>
@@ -201,13 +236,14 @@ export const TopNavbar: React.FC = () => {
           </div>
 
           {/* User Profile Avatar Pill */}
-          <div className="relative">
+          <div className="relative" ref={profileRef}>
             <button
               onClick={() => {
                 setShowProfileMenu(!showProfileMenu);
                 setShowNotifMenu(false);
               }}
-              className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+              aria-label="User account and profile menu"
+              className="flex items-center gap-1.5 sm:gap-2 pl-1 pr-1.5 sm:pr-2 py-1 rounded-full hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
             >
               <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-emerald-700 to-green-500 text-white font-semibold text-xs flex items-center justify-center shadow-sm">
                 {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
@@ -222,7 +258,7 @@ export const TopNavbar: React.FC = () => {
               </div>
             </button>
 
-            {/* Profile Dropdown */}
+            {/* Profile Menu Dropdown */}
             <AnimatePresence>
               {showProfileMenu && (
                 <motion.div
@@ -232,16 +268,18 @@ export const TopNavbar: React.FC = () => {
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-[#E7EBE7] p-3 z-50"
                 >
-                  <div className="pb-2.5 border-b border-slate-100">
-                    <p className="text-xs font-semibold text-slate-900">{user?.full_name}</p>
-                    <p className="text-[11px] text-slate-500">{user?.email}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${roleInfo.bg}`}>
-                        {roleInfo.label}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {user?.employee_id}
-                      </span>
+                  <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-[#166534] font-bold text-sm flex items-center justify-center">
+                      {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-900 truncate">{user?.full_name}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{user?.email}</p>
+                      <div className="mt-1">
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold border ${roleInfo.bg}`}>
+                          {roleInfo.label}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -249,21 +287,25 @@ export const TopNavbar: React.FC = () => {
                     <NavLink
                       to="/settings"
                       onClick={() => setShowProfileMenu(false)}
-                      className="flex items-center gap-2 text-xs text-slate-700 px-2 py-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+                      className="w-full text-left px-3 py-1.5 rounded-xl text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
                     >
-                      <Shield className="w-3.5 h-3.5 text-slate-500" />
+                      <Shield className="w-3.5 h-3.5 text-slate-400" />
                       <span>Security & Profile</span>
                     </NavLink>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 px-2 py-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{user?.municipality_name || 'Global Organization'}</span>
-                    </div>
+                    <NavLink
+                      to="/citizen-portal"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="w-full text-left px-3 py-1.5 rounded-xl text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Public Grievance Portal</span>
+                    </NavLink>
                   </div>
 
                   <div className="pt-2 border-t border-slate-100">
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center justify-center gap-1.5 text-xs text-red-600 hover:bg-red-50 py-1.5 rounded-lg transition-colors font-medium"
+                      className="w-full px-3 py-1.5 rounded-xl text-xs text-red-600 hover:bg-red-50 font-medium flex items-center gap-2 transition-colors"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Sign Out</span>
@@ -279,3 +321,4 @@ export const TopNavbar: React.FC = () => {
   );
 };
 
+export default TopNavbar;

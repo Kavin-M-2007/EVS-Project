@@ -3,7 +3,6 @@ import {
   MapPin,
   Truck,
   AlertTriangle,
-  Layers,
   Info,
   Filter,
   RefreshCw,
@@ -58,7 +57,7 @@ const ROUTE_B_WAYPOINTS: [number, number][] = [
 ];
 
 // Key Peelamedu Landmarks catalog for instant search and quick-jump navigation
-export const PEELAMEDU_LANDMARKS = [
+const PEELAMEDU_LANDMARKS = [
   { name: 'Peelamedu Central', query: 'peelamedu', coords: [11.0260, 77.0100] as [number, number], category: 'Transit & Core', description: 'Central Peelamedu municipal corridor along Avinashi Road.' },
   { name: 'PSG College of Technology', query: 'psg tech', coords: [11.0245, 77.0028] as [number, number], category: 'Education', description: 'Premier autonomous technical institution on Avinashi Road.' },
   { name: 'Hope College Junction', query: 'hope college', coords: [11.0282, 77.0130] as [number, number], category: 'Junction', description: 'Crucial interchange linking Avinashi Road and Kamarajar Road.' },

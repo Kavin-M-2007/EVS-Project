@@ -52,6 +52,7 @@ export const DemoCredentialsBar: React.FC<Props> = ({ onSelectAccount }) => {
             <button
               key={acc.email}
               type="button"
+              aria-label={`Select demo account: ${acc.role} (${acc.email})`}
               onClick={() => onSelectAccount(acc.email)}
               className={`flex items-center gap-2.5 p-2 rounded-xl border text-left transition-all ${acc.color}`}
             >

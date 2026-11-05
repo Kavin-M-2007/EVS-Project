@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import {
-  FileText,
   Download,
-  Calendar,
-  Filter,
-  CheckCircle2,
   Printer,
   Building2
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { TableSkeleton } from '../components/common/SkeletonLoader';
 
 export const ReportsPage: React.FC = () => {
   const { user } = useAuth();
@@ -170,7 +167,11 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       {/* Report Preview Document */}
-      {reportData && (
+      {loading || isGenerating ? (
+        <div className="bg-white rounded-3xl p-8 border border-[#E7EBE7] shadow-xs">
+          <TableSkeleton rows={5} />
+        </div>
+      ) : reportData ? (
         <div className="bg-white rounded-3xl p-8 border border-[#E7EBE7] shadow-xs space-y-6">
           {/* Document Header */}
           <div className="flex items-start justify-between pb-6 border-b border-slate-200">
@@ -210,7 +211,7 @@ export const ReportsPage: React.FC = () => {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[640px] text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-bold">
                   {reportData.headers.map((h: string, idx: number) => (
@@ -232,7 +233,7 @@ export const ReportsPage: React.FC = () => {
             </table>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

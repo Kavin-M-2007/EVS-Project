@@ -17,6 +17,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Municipality, UserRole } from '../types';
 import { UserRoleBadge } from '../components/common/StatusBadge';
+import { TableSkeleton } from '../components/common/SkeletonLoader';
 
 export const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -28,6 +29,7 @@ export const UserManagementPage: React.FC = () => {
   const [showResetModal, setShowResetModal] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState('Admin@123');
   const [actionSuccess, setActionSuccess] = useState('');
+  const [actionError, setActionError] = useState('');
   const [loading, setLoading] = useState(true);
 
   // New user form state
@@ -35,7 +37,7 @@ export const UserManagementPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [role, setRole] = useState<UserRole>('GARBAGE_COLLECTOR');
-  const [municipalityId, setMunicipalityId] = useState<string | number>('a0000000-0000-0000-0000-000000000001');
+  const [municipalityId, setMunicipalityId] = useState<string | number>(1);
   const [assignedArea, setAssignedArea] = useState('Sector 1');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('Admin@123');
@@ -51,11 +53,12 @@ export const UserManagementPage: React.FC = () => {
       ]);
       setUsers(uList);
       setMunicipalities(mList);
-      if (mList.length > 0 && !municipalityId) {
+      if (mList.length > 0) {
         setMunicipalityId(mList[0].id);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setActionError(e.message || 'Failed to load user roster.');
     } finally {
       setLoading(false);
     }
@@ -67,13 +70,14 @@ export const UserManagementPage: React.FC = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    setActionError('');
     try {
       await api.createUser({
         full_name: fullName,
         email,
         employee_id: employeeId,
         role,
-        municipality_id: currentUser?.role === 'SUPER_ADMIN' ? municipalityId : currentUser?.municipality_id,
+        municipality_id: currentUser?.role === 'SUPER_ADMIN' ? (municipalityId || 1) : (currentUser?.municipality_id || 1),
         assigned_area: assignedArea,
         phone_number: phoneNumber,
         password
@@ -87,32 +91,37 @@ export const UserManagementPage: React.FC = () => {
       setEmployeeId('');
       await loadUsersAndMunis();
     } catch (e: any) {
-      alert(e.message || 'Failed to create user.');
+      setActionError(e.message || 'Failed to create user.');
+      setTimeout(() => setActionError(''), 5000);
     }
   };
 
   const handleToggleStatus = async (user: User) => {
     const nextStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    setActionError('');
     try {
       await api.updateUser(user.id, { status: nextStatus });
       setActionSuccess(`User ${user.full_name} status updated to ${nextStatus}.`);
       setTimeout(() => setActionSuccess(''), 4000);
       await loadUsersAndMunis();
     } catch (e: any) {
-      alert(e.message || 'Status update failed.');
+      setActionError(e.message || 'Status update failed.');
+      setTimeout(() => setActionError(''), 5000);
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showResetModal || !newPassword) return;
+    setActionError('');
     try {
       await api.resetPassword(showResetModal.id, newPassword);
       setShowResetModal(null);
       setActionSuccess(`Password reset for ${showResetModal.email}.`);
       setTimeout(() => setActionSuccess(''), 4000);
     } catch (e: any) {
-      alert(e.message || 'Password reset failed.');
+      setActionError(e.message || 'Password reset failed.');
+      setTimeout(() => setActionError(''), 5000);
     }
   };
 
@@ -156,8 +165,19 @@ export const UserManagementPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold flex items-center gap-2"
         >
-          <CheckCircle className="w-4 h-4 text-emerald-600" />
+          <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{actionSuccess}</span>
+        </motion.div>
+      )}
+
+      {actionError && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-xs font-semibold flex items-center gap-2"
+        >
+          <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{actionError}</span>
         </motion.div>
       )}
 
@@ -190,9 +210,20 @@ export const UserManagementPage: React.FC = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+      {loading ? (
+        <TableSkeleton rows={6} />
+      ) : filteredUsers.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-[#E7EBE7] space-y-3">
+          <Users className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-700">No personnel accounts found</h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            Try adjusting your search criteria, clearing the role filter, or provisioning a new team member.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[640px]">
             <thead>
               <tr className="border-b border-[#E7EBE7] text-[#747D75] font-semibold">
                 <th className="pb-3">Staff Member</th>
@@ -267,6 +298,7 @@ export const UserManagementPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
 
       {/* Provision User Modal */}
       <AnimatePresence>

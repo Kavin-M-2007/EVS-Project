@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from database import get_db
 import models, schemas, auth
 
@@ -26,7 +26,7 @@ def login(request: schemas.LoginRequest, db: Session = Depends(get_db)):
         )
 
     # Record login timestamp
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     
     # Audit log
     audit = models.AuditLog(

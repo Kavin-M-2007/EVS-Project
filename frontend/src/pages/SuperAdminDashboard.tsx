@@ -10,9 +10,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   TrendingUp,
-  Activity,
-  RefreshCw,
-  CheckCircle2
+  RefreshCw
 } from 'lucide-react';
 import {
   BarChart,
@@ -26,6 +24,7 @@ import {
   Cell
 } from 'recharts';
 import { StatCard } from '../components/common/StatCard';
+import { CardSkeleton } from '../components/common/SkeletonLoader';
 import { api } from '../services/api';
 import { Municipality, SmartBin } from '../types';
 
@@ -126,36 +125,47 @@ export const SuperAdminDashboard: React.FC = () => {
 
       {/* KPI Cards Row (Calculated from actual database records) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Municipalities"
-          value={municipalities.length}
-          subtitle="Registered jurisdiction territories"
-          icon={<Building2 className="w-4 h-4 text-emerald-700" />}
-          badge="Active Registry"
-        />
-        <StatCard
-          title="Registered Smart Bins"
-          value={allBins.length || metrics.total_smart_bins || 0}
-          subtitle="Realtime IoT nodes in database"
-          change="Supabase Database"
-          icon={<Trash2 className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Total Waste Collected"
-          value={`${totalWasteTonnes} t`}
-          subtitle="Across monitored sectors"
-          change="Measured Mass"
-          icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Recycling Efficiency"
-          value={`${metrics.recycling_efficiency_pct}%`}
-          subtitle="Exceeds statutory minimums"
-          change="A+ Grade"
-          icon={<Recycle className="w-4 h-4 text-emerald-700" />}
-          badge="Verified"
-          badgeColor="bg-emerald-100 text-emerald-800 border-emerald-300"
-        />
+        {loading ? (
+          <>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Total Municipalities"
+              value={municipalities.length}
+              subtitle="Registered jurisdiction territories"
+              icon={<Building2 className="w-4 h-4 text-emerald-700" />}
+              badge="Active Registry"
+            />
+            <StatCard
+              title="Registered Smart Bins"
+              value={allBins.length || metrics.total_smart_bins || 0}
+              subtitle="Realtime IoT nodes in database"
+              change="Supabase Database"
+              icon={<Trash2 className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Total Waste Collected"
+              value={`${totalWasteTonnes} t`}
+              subtitle="Across monitored sectors"
+              change="Measured Mass"
+              icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Recycling Efficiency"
+              value={`${metrics.recycling_efficiency_pct}%`}
+              subtitle="Exceeds statutory minimums"
+              change="A+ Grade"
+              icon={<Recycle className="w-4 h-4 text-emerald-700" />}
+              badge="Verified"
+              badgeColor="bg-emerald-100 text-emerald-800 border-emerald-300"
+            />
+          </>
+        )}
       </div>
 
       {/* Secondary Quick Metrics */}

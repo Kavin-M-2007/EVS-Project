@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  TrendingUp,
-  AlertTriangle,
   Lightbulb,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Layers,
-  ArrowRight,
-  Info
 } from 'lucide-react';
 import {
   LineChart,
@@ -16,11 +8,11 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
-  Legend
+  ResponsiveContainer
 } from 'recharts';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { CardSkeleton } from '../components/common/SkeletonLoader';
 
 export const PredictionsPage: React.FC = () => {
   const { user } = useAuth();
@@ -56,6 +48,19 @@ export const PredictionsPage: React.FC = () => {
       predicted: f.predicted_waste_kg
     }))
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs animate-pulse space-y-3">
+          <div className="w-36 h-4 bg-slate-200 rounded-full" />
+          <div className="w-64 h-6 bg-slate-300 rounded-lg" />
+          <div className="w-96 h-3 bg-slate-100 rounded-full" />
+        </div>
+        <CardSkeleton count={4} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -10,8 +10,6 @@ import {
   CheckCircle2,
   PlusCircle,
   ArrowRight,
-  TrendingUp,
-  MapPin,
   RefreshCw,
   FileText
 } from 'lucide-react';
@@ -24,6 +22,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { StatCard } from '../components/common/StatCard';
+import { CardSkeleton, TableSkeleton } from '../components/common/SkeletonLoader';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { SmartBin, CollectionTask, Complaint } from '../types';
@@ -132,35 +131,46 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Primary KPI Cards (Calculated from database records) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Waste Collected"
-          value={`${totalWasteTonnes} t`}
-          subtitle="From registered smart bins"
-          change="Realtime Database"
-          icon={<Trash2 className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Recycling Rate"
-          value={`${recyclingRate}%`}
-          subtitle="Segregated recyclable streams"
-          badge="Verified"
-          icon={<Recycle className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Active Smart Bins"
-          value={bins.length}
-          subtitle={`${criticalBins.length} requiring immediate pickup`}
-          icon={<AlertTriangle className={`w-4 h-4 ${criticalBins.length > 0 ? 'text-red-500' : 'text-emerald-700'}`} />}
-          badge={criticalBins.length > 0 ? `${criticalBins.length} Critical` : 'All Normal'}
-          badgeColor={criticalBins.length > 0 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}
-        />
-        <StatCard
-          title="Collection Completion"
-          value={`${completionRate}%`}
-          subtitle={`${completedTasks.length} of ${tasks.length} tasks done`}
-          change="Daily Operations"
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-700" />}
-        />
+        {loading ? (
+          <>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Total Waste Collected"
+              value={`${totalWasteTonnes} t`}
+              subtitle="From registered smart bins"
+              change="Realtime Database"
+              icon={<Trash2 className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Recycling Rate"
+              value={`${recyclingRate}%`}
+              subtitle="Segregated recyclable streams"
+              badge="Verified"
+              icon={<Recycle className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Active Smart Bins"
+              value={bins.length}
+              subtitle={`${criticalBins.length} requiring immediate pickup`}
+              icon={<AlertTriangle className={`w-4 h-4 ${criticalBins.length > 0 ? 'text-red-500' : 'text-emerald-700'}`} />}
+              badge={criticalBins.length > 0 ? `${criticalBins.length} Critical` : 'All Normal'}
+              badgeColor={criticalBins.length > 0 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}
+            />
+            <StatCard
+              title="Collection Completion"
+              value={`${completionRate}%`}
+              subtitle={`${completedTasks.length} of ${tasks.length} tasks done`}
+              change="Daily Operations"
+              icon={<CheckCircle2 className="w-4 h-4 text-emerald-700" />}
+            />
+          </>
+        )}
       </div>
 
       {/* Bin Status Granular Distribution (Phase 5 Requirement #2) */}
@@ -352,12 +362,14 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto">
-          {tasks.length === 0 ? (
+          {loading ? (
+            <TableSkeleton rows={4} />
+          ) : tasks.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
               No collection tasks scheduled today.
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[640px] text-left text-xs">
               <thead>
                 <tr className="border-b border-[#E7EBE7] text-[#747D75] font-semibold">
                   <th className="pb-3">Task Code</th>

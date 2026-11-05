@@ -2,11 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Route,
   Navigation,
-  Truck,
-  Users,
   CheckCircle2,
-  Clock,
-  TrendingDown,
   ArrowRight,
   MapPin,
   AlertCircle
@@ -25,6 +21,7 @@ export const RouteOptimizationPage: React.FC = () => {
   const [optResult, setOptResult] = useState<RouteOptimizationResult | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [assignedMessage, setAssignedMessage] = useState('');
+  const [optError, setOptError] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,8 +39,9 @@ export const RouteOptimizationPage: React.FC = () => {
         if (userList.length > 0) {
           setSelectedCollectorId(userList[0].id);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        setOptError(e.message || 'Failed to initialize fleet data.');
       } finally {
         setLoading(false);
       }
@@ -66,22 +64,25 @@ export const RouteOptimizationPage: React.FC = () => {
 
   const handleOptimizeRoute = async () => {
     if (selectedBinIds.length === 0) {
-      alert('Please select at least one smart bin to include in the route.');
+      setOptError('Please select at least one smart bin to include in the route.');
+      setTimeout(() => setOptError(''), 4000);
       return;
     }
 
     setIsOptimizing(true);
     setAssignedMessage('');
+    setOptError('');
 
     try {
       const res = await api.optimizeRoute({
-        municipality_id: user?.municipality_id || 'a0000000-0000-0000-0000-000000000001',
+        municipality_id: user?.municipality_id || 1,
         bin_ids: selectedBinIds,
         collector_id: selectedCollectorId ? selectedCollectorId : undefined
       });
       setOptResult(res);
     } catch (e: any) {
-      alert(e.message || 'Route calculation failed.');
+      setOptError(e.message || 'Route calculation failed.');
+      setTimeout(() => setOptError(''), 5000);
     } finally {
       setIsOptimizing(false);
     }
@@ -89,13 +90,15 @@ export const RouteOptimizationPage: React.FC = () => {
 
   const handleAssignTask = async () => {
     if (!optResult || !selectedCollectorId) {
-      alert('Please select an active collector.');
+      setOptError('Please select an active collector to assign this route.');
+      setTimeout(() => setOptError(''), 4000);
       return;
     }
 
+    setOptError('');
     try {
       await api.createTask({
-        municipality_id: user?.municipality_id || 'a0000000-0000-0000-0000-000000000001',
+        municipality_id: user?.municipality_id || 1,
         collector_id: selectedCollectorId,
         area_name: 'Optimized Peelamedu Collection Tour',
         priority: 'HIGH',
@@ -104,7 +107,8 @@ export const RouteOptimizationPage: React.FC = () => {
       setAssignedMessage('Tour assigned successfully to collector! Task dispatched.');
       setTimeout(() => setAssignedMessage(''), 5000);
     } catch (e: any) {
-      alert(e.message || 'Task assignment failed.');
+      setOptError(e.message || 'Task assignment failed.');
+      setTimeout(() => setOptError(''), 5000);
     }
   };
 

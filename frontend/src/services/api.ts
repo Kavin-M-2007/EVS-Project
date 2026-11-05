@@ -13,7 +13,22 @@ import {
 } from '../types';
 import { supabase, isSupabaseConfigured } from './supabase';
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+
+export function toSupabaseMuniId(id?: string | number): string | undefined {
+  if (!id || id === 'all') return undefined;
+  const str = String(id).trim();
+  // Valid UUID format check
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)) {
+    return str;
+  }
+  // Numeric municipality IDs mapped to deterministic seed UUIDs
+  if (/^\d+$/.test(str)) {
+    const padded = str.padStart(12, '0');
+    return `a0000000-0000-0000-0000-${padded}`;
+  }
+  return undefined;
+}
 
 export function getStoredToken(): string | null {
   return localStorage.getItem('ecosort_token');
@@ -153,10 +168,12 @@ export const api = {
   getSectors: async (municipalityId?: string | number): Promise<Sector[]> => {
     if (isSupabaseConfigured && municipalityId) {
       try {
+        const supaMuni = toSupabaseMuniId(municipalityId);
+        if (!supaMuni) return [];
         const { data, error } = await supabase
           .from('sectors')
           .select('*')
-          .eq('municipality_id', municipalityId)
+          .eq('municipality_id', supaMuni)
           .order('name');
         if (!error && data) return data;
       } catch (err) {
@@ -174,7 +191,8 @@ export const api = {
       try {
         let q = supabase.from('profiles').select('*, municipalities(name)').order('full_name');
         if (role) q = q.eq('role', role);
-        if (municipalityId && municipalityId !== 'all') q = q.eq('municipality_id', municipalityId);
+        const supaMuni = toSupabaseMuniId(municipalityId);
+        if (supaMuni) q = q.eq('municipality_id', supaMuni);
 
         const { data, error } = await q;
         if (!error && data && data.length > 0) {
@@ -239,7 +257,8 @@ export const api = {
     if (isSupabaseConfigured) {
       try {
         let q = supabase.from('smart_bins').select('*, municipalities(name), sectors(name)').order('fill_level', { ascending: false });
-        if (municipalityId && municipalityId !== 'all') q = q.eq('municipality_id', municipalityId);
+        const supaMuni = toSupabaseMuniId(municipalityId);
+        if (supaMuni) q = q.eq('municipality_id', supaMuni);
         if (status && status !== 'all') q = q.eq('status', status);
         if (category && category !== 'all') q = q.eq('waste_category', category);
 
@@ -481,7 +500,8 @@ export const api = {
     if (isSupabaseConfigured) {
       try {
         let q = supabase.from('vehicles').select('*, municipalities(name), profiles(full_name)').order('vehicle_code');
-        if (municipalityId && municipalityId !== 'all') q = q.eq('municipality_id', municipalityId);
+        const supaMuni = toSupabaseMuniId(municipalityId);
+        if (supaMuni) q = q.eq('municipality_id', supaMuni);
         const { data, error } = await q;
         if (!error && data) {
           return data.map((v: any) => ({
@@ -564,11 +584,12 @@ export const api = {
         const count = Math.floor(Math.random() * 900) + 100;
         const taskCode = `TASK-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${count}`;
 
+        const resolvedMuni = toSupabaseMuniId(taskData.municipality_id) || 'a0000000-0000-0000-0000-000000000001';
         const { data: created, error } = await supabase
           .from('collection_assignments')
           .insert([{
             assignment_code: taskCode,
-            municipality_id: taskData.municipality_id,
+            municipality_id: resolvedMuni,
             collector_id: taskData.collector_id,
             vehicle_id: taskData.vehicle_id || null,
             route_id: taskData.route_id || null,
@@ -585,7 +606,7 @@ export const api = {
           // Notify collector
           await supabase.from('notifications').insert([{
             user_id: taskData.collector_id,
-            municipality_id: taskData.municipality_id,
+            municipality_id: resolvedMuni,
             title: 'New Task Assignment',
             message: `You have been assigned collection task ${taskCode} in ${taskData.area_name}.`,
             notification_type: 'TASK_ASSIGNED',
@@ -790,7 +811,7 @@ export const api = {
             citizen_name: data.citizen_name?.trim(),
             citizen_phone: data.citizen_phone || null,
             citizen_email: data.citizen_email || null,
-            municipality_id: data.municipality_id || 'a0000000-0000-0000-0000-000000000001',
+            municipality_id: toSupabaseMuniId(data.municipality_id) || 'a0000000-0000-0000-0000-000000000001',
             sector_id: data.sector_id || null,
             complaint_type: data.complaint_type,
             description: data.description?.trim(),

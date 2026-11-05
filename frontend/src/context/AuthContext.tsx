@@ -75,6 +75,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let authSubscription: { unsubscribe: () => void } | null = null;
 
+    if (isSupabaseConfigured) {
+      // Listen for Supabase auth state changes (sign-in, token refresh, sign-out)
+      const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session) {
+            const profile = await fetchSupabaseProfile(
+              session.user.id,
+              session.user.email || '',
+              session.user.user_metadata
+            );
+            setUser(profile);
+            setToken(session.access_token);
+            setStoredToken(session.access_token);
+            setStoredUser(profile);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          clearStoredToken();
+          setUser(null);
+          setToken(null);
+        }
+      });
+      authSubscription = listener.subscription;
+    }
+
     async function initSession() {
       if (isSupabaseConfigured) {
         try {
@@ -110,28 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } finally {
           setIsLoading(false);
         }
-
-        // Listen for Supabase auth state changes (sign-in, token refresh, sign-out)
-        const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            if (session) {
-              const profile = await fetchSupabaseProfile(
-                session.user.id,
-                session.user.email || '',
-                session.user.user_metadata
-              );
-              setUser(profile);
-              setToken(session.access_token);
-              setStoredToken(session.access_token);
-              setStoredUser(profile);
-            }
-          } else if (event === 'SIGNED_OUT') {
-            clearStoredToken();
-            setUser(null);
-            setToken(null);
-          }
-        });
-        authSubscription = listener.subscription;
       } else {
         // Supabase not yet configured, verify standard backend auth
         const storedTok = getStoredToken();

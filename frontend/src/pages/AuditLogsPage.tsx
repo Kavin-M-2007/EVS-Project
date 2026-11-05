@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, Filter, Search, Clock, User, AlertCircle } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { api } from '../services/api';
 import { AuditLog } from '../types';
+import { TableSkeleton } from '../components/common/SkeletonLoader';
 
 export const AuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -59,9 +60,20 @@ export const AuditLogsPage: React.FC = () => {
       </div>
 
       {/* Audit Logs Table */}
-      <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+      {loading ? (
+        <TableSkeleton rows={8} />
+      ) : logs.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-[#E7EBE7] space-y-3">
+          <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-700">No audit events recorded</h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            System activity will appear here as operational tasks and credentials changes occur.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[650px]">
             <thead>
               <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
                 <th className="pb-3">Timestamp</th>
@@ -102,6 +114,7 @@ export const AuditLogsPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };

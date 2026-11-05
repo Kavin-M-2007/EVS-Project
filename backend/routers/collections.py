@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from database import get_db
 import models, schemas, auth
 
@@ -147,7 +147,7 @@ def update_task_status(
         raise HTTPException(status_code=400, detail="Invalid status. Must be Assigned, Accepted, In Progress, Collected, or Completed")
 
     task.status = canonical_map[status_upper]
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     if status_upper == "ACCEPTED":
         task.accepted_at = now
@@ -193,30 +193,39 @@ def update_task_status(
 
 @router.get("/collector/summary")
 def get_collector_daily_summary(
-    current_user: models.User = Depends(auth.require_roles(["GARBAGE_COLLECTOR"])),
+    current_user: models.User = Depends(auth.require_roles(["GARBAGE_COLLECTOR", "ADMIN", "SUPER_ADMIN"])),
     db: Session = Depends(get_db)
 ):
+    target_collector = current_user
+    if current_user.role in ("ADMIN", "SUPER_ADMIN"):
+        collector_query = db.query(models.User).filter(models.User.role == "GARBAGE_COLLECTOR")
+        if current_user.municipality_id:
+            collector_query = collector_query.filter(models.User.municipality_id == current_user.municipality_id)
+        found = collector_query.first()
+        if found:
+            target_collector = found
+
     today_start = datetime.combine(date.today(), datetime.min.time())
     tasks_today = db.query(models.CollectionTask).filter(
-        models.CollectionTask.collector_id == current_user.id,
+        models.CollectionTask.collector_id == target_collector.id,
         models.CollectionTask.assigned_at >= today_start
     ).all()
 
-    completed = sum(1 for t in tasks_today if t.status == "Completed")
-    in_progress = sum(1 for t in tasks_today if t.status in ("Accepted", "In Progress", "Collected"))
-    pending = sum(1 for t in tasks_today if t.status == "Assigned")
+    completed = sum(1 for t in tasks_today if t.status in ("Completed", "COMPLETED"))
+    in_progress = sum(1 for t in tasks_today if t.status in ("Accepted", "ACCEPTED", "In Progress", "IN_PROGRESS", "Collected", "COLLECTED"))
+    pending = sum(1 for t in tasks_today if t.status in ("Assigned", "ASSIGNED"))
 
     # Total bins collected today
     collections_today = db.query(models.CollectionRecord).filter(
-        models.CollectionRecord.collector_id == current_user.id,
+        models.CollectionRecord.collector_id == target_collector.id,
         models.CollectionRecord.collected_at >= today_start
     ).all()
     total_weight = sum(c.weight_kg for c in collections_today)
 
     return {
-        "collector_name": current_user.full_name,
-        "employee_id": current_user.employee_id,
-        "assigned_area": current_user.assigned_area or "Sector 1",
+        "collector_name": target_collector.full_name,
+        "employee_id": target_collector.employee_id,
+        "assigned_area": target_collector.assigned_area or "Sector 1",
         "tasks_assigned_today": len(tasks_today),
         "tasks_completed_today": completed,
         "tasks_in_progress": in_progress,

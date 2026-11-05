@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  Eye,
   CheckCircle2,
   AlertTriangle,
   FileText,
-  BarChart2,
   TrendingUp,
   Download,
-  Shield,
-  Activity,
-  Layers
+  Activity
 } from 'lucide-react';
 import {
   BarChart,
@@ -24,10 +20,11 @@ import {
   Cell
 } from 'recharts';
 import { StatCard } from '../components/common/StatCard';
+import { CardSkeleton } from '../components/common/SkeletonLoader';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { SmartBin, CollectionTask, Complaint } from '../types';
-import { TaskStatusBadge, BinStatusBadge } from '../components/common/StatusBadge';
+import { TaskStatusBadge } from '../components/common/StatusBadge';
 
 export const MonitorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -61,7 +58,7 @@ export const MonitorDashboard: React.FC = () => {
     loadData();
 
     // Setup realtime subscription for monitoring updates
-    const unsubscribe = api.subscribeToBins?.((payload) => {
+    const unsubscribe = api.subscribeToBins?.(() => {
       loadData();
     });
 
@@ -114,34 +111,45 @@ export const MonitorDashboard: React.FC = () => {
 
       {/* KPI Cards (Requirement #11) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Recycling Compliance"
-          value={recyclingEfficiency}
-          subtitle="Target 70% statutory"
-          badge="Verified A+"
-          icon={<CheckCircle2 className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Gross Municipal Waste"
-          value={totalWasteTonnes}
-          subtitle="Total recorded tonnage"
-          icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Bin Overflow Rate"
-          value={`${criticalBins.length} Bins`}
-          subtitle="Requiring supervisor review"
-          badge={criticalBins.length > 0 ? 'Action Needed' : 'Nominal'}
-          badgeColor={criticalBins.length > 0 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}
-          icon={<AlertTriangle className="w-4 h-4 text-amber-600" />}
-        />
-        <StatCard
-          title="Citizen Grievances"
-          value={pendingComplaints.length}
-          subtitle="Active open complaints"
-          badge="SLA: < 24 hrs"
-          icon={<FileText className="w-4 h-4 text-purple-700" />}
-        />
+        {loading ? (
+          <>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Recycling Compliance"
+              value={recyclingEfficiency}
+              subtitle="Target 70% statutory"
+              badge="Verified A+"
+              icon={<CheckCircle2 className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Gross Municipal Waste"
+              value={totalWasteTonnes}
+              subtitle="Total recorded tonnage"
+              icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Bin Overflow Rate"
+              value={`${criticalBins.length} Bins`}
+              subtitle="Requiring supervisor review"
+              badge={criticalBins.length > 0 ? 'Action Needed' : 'Nominal'}
+              badgeColor={criticalBins.length > 0 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}
+              icon={<AlertTriangle className="w-4 h-4 text-amber-600" />}
+            />
+            <StatCard
+              title="Citizen Grievances"
+              value={pendingComplaints.length}
+              subtitle="Active open complaints"
+              badge="SLA: < 24 hrs"
+              icon={<FileText className="w-4 h-4 text-purple-700" />}
+            />
+          </>
+        )}
       </div>
 
       {/* Segregation & Area Breakdown Charts */}

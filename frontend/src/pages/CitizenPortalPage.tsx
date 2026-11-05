@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
 import {
   FileText,
   MapPin,
@@ -7,12 +8,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
+  ArrowLeft,
   ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 export const CitizenPortalPage: React.FC = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'submit' | 'track'>('submit');
 
   // Submit Complaint Form State
@@ -26,6 +30,7 @@ export const CitizenPortalPage: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState<any>(null);
+  const [formError, setFormError] = useState('');
 
   // Track Complaint State
   const [trackTicketNumber, setTrackTicketNumber] = useState('ECO-TKT-8841');
@@ -33,22 +38,32 @@ export const CitizenPortalPage: React.FC = () => {
   const [trackError, setTrackError] = useState('');
   const [isTracking, setIsTracking] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
+      setFormError('');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!citizenName || !locationName || !description) {
-      alert('Please fill out all required fields.');
+      setFormError('Please fill out all required fields: Name, Location, and Description.');
+      setTimeout(() => setFormError(''), 4000);
       return;
     }
 
     setIsSubmitting(true);
+    setFormError('');
     try {
       let uploadedPhotoUrl: string | undefined = undefined;
       if (photoFile) {
@@ -63,7 +78,7 @@ export const CitizenPortalPage: React.FC = () => {
         citizen_name: citizenName,
         citizen_phone: citizenPhone,
         citizen_email: citizenEmail,
-        municipality_id: 'a0000000-0000-0000-0000-000000000001', // Coimbatore default
+        municipality_id: 1, // Coimbatore default
         complaint_type: complaintType,
         locationName: locationName,
         location_name: locationName,
@@ -77,9 +92,11 @@ export const CitizenPortalPage: React.FC = () => {
       setLocationName('');
       setDescription('');
       setPhotoFile(null);
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
       setPhotoPreview(null);
     } catch (e: any) {
-      alert(e.message || 'Failed to submit report.');
+      setFormError(e.message || 'Failed to submit report.');
+      setTimeout(() => setFormError(''), 5000);
     } finally {
       setIsSubmitting(false);
     }
@@ -105,6 +122,27 @@ export const CitizenPortalPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+      {user && (
+        <div className="flex justify-between items-center">
+          <NavLink
+            to={
+              user.role === 'SUPER_ADMIN'
+                ? '/dashboard/super-admin'
+                : user.role === 'ADMIN'
+                ? '/dashboard/admin'
+                : user.role === 'GARBAGE_COLLECTOR'
+                ? '/dashboard/collector'
+                : '/dashboard/monitor'
+            }
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E7EBE7] text-xs font-semibold text-[#166534] hover:bg-emerald-50 transition-all shadow-xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Return to Dashboard</span>
+          </NavLink>
+          <span className="text-xs text-slate-500 font-medium">Logged in as {user.full_name}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs text-center space-y-2">
         <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#166534] flex items-center justify-center mx-auto shadow-xs">
@@ -141,6 +179,12 @@ export const CitizenPortalPage: React.FC = () => {
       {/* Tab 1: Submit Grievance Form */}
       {activeTab === 'submit' && (
         <div className="bg-white rounded-3xl p-7 border border-[#E7EBE7] shadow-xs">
+          {formError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
           {submittedTicket ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

@@ -1,8 +1,11 @@
 import datetime
 import json
+import logging
 from sqlalchemy.orm import Session
 from database import engine, Base, SessionLocal
 import models, auth
+
+logger = logging.getLogger("ecosort.seed")
 
 def seed_database():
     Base.metadata.create_all(bind=engine)
@@ -12,10 +15,10 @@ def seed_database():
         # Check if already seeded with Coimbatore
         existing_muni = db.query(models.Municipality).filter(models.Municipality.code == "CCMC-01").first()
         if existing_muni:
-            print("Database already seeded with Coimbatore (Peelamedu) demonstration data.")
+            logger.info("Database already seeded with Coimbatore (Peelamedu) demonstration data.")
             return
 
-        print("Seeding EcoSort AI database with Peelamedu, Coimbatore demonstration data...")
+        logger.info("Seeding EcoSort AI database with Peelamedu, Coimbatore demonstration data...")
 
         # Clear existing demo data to prevent stale Mumbai records
         db.query(models.SensorReading).delete()
@@ -218,7 +221,7 @@ def seed_database():
                 battery_level=bat,
                 temperature_c=temp,
                 weight_kg=wt,
-                last_collection_time=datetime.datetime.utcnow() - datetime.timedelta(hours=4)
+                last_collection_time=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=4)
             )
             created_bins.append(sb)
 
@@ -234,7 +237,7 @@ def seed_database():
                     temperature_c=b.temperature_c - (h * 0.3),
                     weight_kg=max(4.0, b.weight_kg - (h * 3.2)),
                     battery_pct=b.battery_level,
-                    recorded_at=datetime.datetime.utcnow() - datetime.timedelta(hours=h * 2)
+                    recorded_at=datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=h * 2)
                 )
                 db.add(reading)
         db.commit()
@@ -262,7 +265,7 @@ def seed_database():
         db.refresh(route_1)
 
         # 7. Collection Tasks
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         t1 = models.CollectionTask(
             task_code="TASK-20261105-001",
             municipality_id=coimbatore.id,
@@ -375,11 +378,11 @@ def seed_database():
         db.add_all(audits)
 
         db.commit()
-        print("Database successfully seeded with Peelamedu, Coimbatore demonstration data!")
+        logger.info("Database successfully seeded with Peelamedu, Coimbatore demonstration data!")
 
     except Exception as e:
         db.rollback()
-        print(f"Error seeding database: {e}")
+        logger.error(f"Error seeding database: {e}", exc_info=True)
     finally:
         db.close()
 

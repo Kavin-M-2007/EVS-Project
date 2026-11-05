@@ -17,6 +17,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { CollectionTask, User } from '../types';
 import { TaskStatusBadge, PriorityBadge } from '../components/common/StatusBadge';
+import { TableSkeleton } from '../components/common/SkeletonLoader';
 
 export const CollectionsPage: React.FC = () => {
   const { user } = useAuth();
@@ -32,6 +33,8 @@ export const CollectionsPage: React.FC = () => {
   const [newCollectorId, setNewCollectorId] = useState<string | number | ''>('');
   const [newPriority, setNewPriority] = useState('MEDIUM');
   const [newNotes, setNewNotes] = useState('');
+  const [taskSuccess, setTaskSuccess] = useState('');
+  const [taskError, setTaskError] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchTasks = async () => {
@@ -48,8 +51,9 @@ export const CollectionsPage: React.FC = () => {
       if (cList.length > 0 && !newCollectorId) {
         setNewCollectorId(cList[0].id);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setTaskError(e.message || 'Failed to load task list.');
     } finally {
       setLoading(false);
     }
@@ -62,13 +66,15 @@ export const CollectionsPage: React.FC = () => {
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCollectorId) {
-      alert('Please select a collector.');
+      setTaskError('Please select an authorized garbage collector.');
+      setTimeout(() => setTaskError(''), 4000);
       return;
     }
 
+    setTaskError('');
     try {
       await api.createTask({
-        municipality_id: user?.municipality_id || 'a0000000-0000-0000-0000-000000000001',
+        municipality_id: user?.municipality_id || 1,
         collector_id: newCollectorId,
         area_name: newArea,
         priority: newPriority,
@@ -76,9 +82,12 @@ export const CollectionsPage: React.FC = () => {
       });
       setShowCreateModal(false);
       setNewNotes('');
+      setTaskSuccess('New collection task assigned and dispatched.');
+      setTimeout(() => setTaskSuccess(''), 5000);
       await fetchTasks();
     } catch (e: any) {
-      alert(e.message || 'Task creation failed.');
+      setTaskError(e.message || 'Task creation failed.');
+      setTimeout(() => setTaskError(''), 5000);
     }
   };
 
@@ -112,6 +121,28 @@ export const CollectionsPage: React.FC = () => {
         )}
       </div>
 
+      {taskSuccess && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-semibold flex items-center gap-2"
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{taskSuccess}</span>
+        </motion.div>
+      )}
+
+      {taskError && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-2xl text-xs font-semibold flex items-center gap-2"
+        >
+          <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+          <span>{taskError}</span>
+        </motion.div>
+      )}
+
       {/* Filter Bar */}
       <div className="bg-white rounded-2xl p-4 border border-[#E7EBE7] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
@@ -143,9 +174,20 @@ export const CollectionsPage: React.FC = () => {
       </div>
 
       {/* Tasks Table */}
-      <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+      {loading ? (
+        <TableSkeleton rows={5} />
+      ) : tasks.length === 0 ? (
+        <div className="bg-white rounded-3xl p-12 text-center border border-[#E7EBE7] space-y-3">
+          <Truck className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-sm font-bold text-slate-700">No collection tasks found</h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            Try resetting your filters or dispatching a new route tour.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-6 border border-[#E7EBE7] shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-[#E7EBE7] text-[#747D75] font-semibold">
                 <th className="pb-3">Task ID</th>
@@ -193,6 +235,7 @@ export const CollectionsPage: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
 
       {/* Create Task Modal */}
       <AnimatePresence>

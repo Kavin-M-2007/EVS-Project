@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from database import get_db
 import models, schemas, auth
 
@@ -210,7 +210,7 @@ def update_bin_telemetry(
     if update.weight_kg is not None:
         bin_obj.weight_kg = update.weight_kg
 
-    bin_obj.updated_at = datetime.utcnow()
+    bin_obj.updated_at = datetime.now(timezone.utc)
 
     # Append to sensor readings history
     reading = models.SensorReading(
@@ -259,7 +259,7 @@ def update_smart_bin(
     if bin_in.weight_kg is not None:
         bin_obj.weight_kg = bin_in.weight_kg
 
-    bin_obj.updated_at = datetime.utcnow()
+    bin_obj.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(bin_obj)
 

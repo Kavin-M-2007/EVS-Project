@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /citizen-portal
+Disallow: /dashboard/
+Disallow: /api/
+
+Sitemap: https://ecosort.ai/sitemap.xml
+

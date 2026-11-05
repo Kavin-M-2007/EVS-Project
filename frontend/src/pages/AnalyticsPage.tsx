@@ -10,13 +10,13 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts';
-import { Download, Calendar, Filter, Recycle, TrendingUp, CheckCircle, Info } from 'lucide-react';
+import { Download, Recycle, TrendingUp, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/common/StatCard';
+import { CardSkeleton } from '../components/common/SkeletonLoader';
 
 export const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
@@ -97,35 +97,46 @@ export const AnalyticsPage: React.FC = () => {
 
       {/* KPI Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Gross Tonnage"
-          value={`${(metrics.total_waste_collected_kg / 1000).toFixed(1)} t`}
-          subtitle="Net municipal intake"
-          change="+6.2%"
-          icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Recycled Volume"
-          value={`${(metrics.recycled_waste_kg / 1000).toFixed(1)} t`}
-          subtitle="Diverted from landfill"
-          change="+8.9%"
-          icon={<CheckCircle className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Recycling Efficiency"
-          value={`${metrics.recycling_efficiency_pct}%`}
-          subtitle="Statutory threshold 70%"
-          badge="Exceeding Target"
-          icon={<Recycle className="w-4 h-4 text-emerald-700" />}
-        />
-        <StatCard
-          title="Collection SLA Adherence"
-          value={`${metrics.collection_completion_rate}%`}
-          subtitle="Completed on schedule"
-          badge="Gold Standard"
-          badgeColor="bg-emerald-100 text-emerald-800 border-emerald-300"
-          icon={<CheckCircle className="w-4 h-4 text-emerald-700" />}
-        />
+        {loading ? (
+          <>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Gross Tonnage"
+              value={`${(metrics.total_waste_collected_kg / 1000).toFixed(1)} t`}
+              subtitle="Net municipal intake"
+              change="+6.2%"
+              icon={<TrendingUp className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Recycled Volume"
+              value={`${(metrics.recycled_waste_kg / 1000).toFixed(1)} t`}
+              subtitle="Diverted from landfill"
+              change="+8.9%"
+              icon={<CheckCircle className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Recycling Efficiency"
+              value={`${metrics.recycling_efficiency_pct}%`}
+              subtitle="Statutory threshold 70%"
+              badge="Exceeding Target"
+              icon={<Recycle className="w-4 h-4 text-emerald-700" />}
+            />
+            <StatCard
+              title="Collection SLA Adherence"
+              value={`${metrics.collection_completion_rate}%`}
+              subtitle="Completed on schedule"
+              badge="Gold Standard"
+              badgeColor="bg-emerald-100 text-emerald-800 border-emerald-300"
+              icon={<CheckCircle className="w-4 h-4 text-emerald-700" />}
+            />
+          </>
+        )}
       </div>
 
       {/* Trend Line Chart */}

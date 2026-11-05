@@ -1,28 +1,31 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { LoadingScreen } from './components/common/SkeletonLoader';
 
-// Pages
-import { LoginPage } from './pages/LoginPage';
-import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { CollectorDashboard } from './pages/CollectorDashboard';
-import { MonitorDashboard } from './pages/MonitorDashboard';
-import { AIScannerPage } from './pages/AIScannerPage';
-import { SmartBinsPage } from './pages/SmartBinsPage';
-import { LiveCityMapPage } from './pages/LiveCityMapPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { PredictionsPage } from './pages/PredictionsPage';
-import { RouteOptimizationPage } from './pages/RouteOptimizationPage';
-import { CollectionsPage } from './pages/CollectionsPage';
-import { CitizenPortalPage } from './pages/CitizenPortalPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { UserManagementPage } from './pages/UserManagementPage';
-import { AuditLogsPage } from './pages/AuditLogsPage';
-import { SettingsPage } from './pages/SettingsPage';
+// Code-split pages via React.lazy for optimized bundle size & fast TTI
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const CitizenPortalPage = lazy(() => import('./pages/CitizenPortalPage').then(m => ({ default: m.CitizenPortalPage })));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const CollectorDashboard = lazy(() => import('./pages/CollectorDashboard').then(m => ({ default: m.CollectorDashboard })));
+const MonitorDashboard = lazy(() => import('./pages/MonitorDashboard').then(m => ({ default: m.MonitorDashboard })));
+const AIScannerPage = lazy(() => import('./pages/AIScannerPage').then(m => ({ default: m.AIScannerPage })));
+const SmartBinsPage = lazy(() => import('./pages/SmartBinsPage').then(m => ({ default: m.SmartBinsPage })));
+const LiveCityMapPage = lazy(() => import('./pages/LiveCityMapPage').then(m => ({ default: m.LiveCityMapPage })));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(m => ({ default: m.AnalyticsPage })));
+const PredictionsPage = lazy(() => import('./pages/PredictionsPage').then(m => ({ default: m.PredictionsPage })));
+const RouteOptimizationPage = lazy(() => import('./pages/RouteOptimizationPage').then(m => ({ default: m.RouteOptimizationPage })));
+const CollectionsPage = lazy(() => import('./pages/CollectionsPage').then(m => ({ default: m.CollectionsPage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const UserManagementPage = lazy(() => import('./pages/UserManagementPage').then(m => ({ default: m.UserManagementPage })));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 const RootRedirect: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -55,79 +58,85 @@ const RootRedirect: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <NotificationProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/citizen-portal" element={<CitizenPortalPage />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <NotificationProvider>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/citizen-portal" element={<CitizenPortalPage />} />
 
-            {/* Root Dispatcher */}
-            <Route path="/" element={<RootRedirect />} />
+                {/* Root Dispatcher */}
+                <Route path="/" element={<RootRedirect />} />
+                <Route path="/dashboard" element={<RootRedirect />} />
+                <Route path="/dashboard/" element={<RootRedirect />} />
 
-            {/* Protected Routes Layout */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              {/* Role Dashboards */}
-              <Route
-                path="/dashboard/super-admin"
-                element={
-                  <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
-                    <SuperAdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/admin"
-                element={
-                  <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/collector"
-                element={
-                  <ProtectedRoute allowedRoles={['GARBAGE_COLLECTOR', 'ADMIN', 'SUPER_ADMIN']}>
-                    <CollectorDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/monitor"
-                element={
-                  <ProtectedRoute allowedRoles={['MUNICIPALITY_MONITOR', 'SUPER_ADMIN']}>
-                    <MonitorDashboard />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Protected Routes Layout */}
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  {/* Role Dashboards */}
+                  <Route
+                    path="/dashboard/super-admin"
+                    element={
+                      <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                        <SuperAdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/admin"
+                    element={
+                      <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/collector"
+                    element={
+                      <ProtectedRoute allowedRoles={['GARBAGE_COLLECTOR', 'ADMIN', 'SUPER_ADMIN']}>
+                        <CollectorDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard/monitor"
+                    element={
+                      <ProtectedRoute allowedRoles={['MUNICIPALITY_MONITOR', 'SUPER_ADMIN']}>
+                        <MonitorDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
 
-              {/* Core Feature Modules */}
-              <Route path="/ai-scanner" element={<AIScannerPage />} />
-              <Route path="/smart-bins" element={<SmartBinsPage />} />
-              <Route path="/map" element={<LiveCityMapPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/predictions" element={<PredictionsPage />} />
-              <Route path="/route-optimization" element={<RouteOptimizationPage />} />
-              <Route path="/collections" element={<CollectionsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/users" element={<UserManagementPage />} />
-              <Route path="/audit-logs" element={<AuditLogsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Route>
+                  {/* Core Feature Modules */}
+                  <Route path="/ai-scanner" element={<AIScannerPage />} />
+                  <Route path="/smart-bins" element={<SmartBinsPage />} />
+                  <Route path="/map" element={<LiveCityMapPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/predictions" element={<PredictionsPage />} />
+                  <Route path="/route-optimization" element={<RouteOptimizationPage />} />
+                  <Route path="/collections" element={<CollectionsPage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/users" element={<UserManagementPage />} />
+                  <Route path="/audit-logs" element={<AuditLogsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </NotificationProvider>
-      </AuthProvider>
-    </BrowserRouter>
+                {/* Bespoke 404 Page */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
+          </NotificationProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

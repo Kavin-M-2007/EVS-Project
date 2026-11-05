@@ -1,37 +1,159 @@
-# Environment Variables
-.env
-*.env
-backend/.env
-frontend/.env
-*.env.local
+# ==========================================
+# EcoSort - Git Ignore Configuration
+# Full-Stack FastAPI + React/Vite Project
+# ==========================================
 
+# ------------------------------------------
+# Environment Variables & Secrets
+# ------------------------------------------
+.env
+.env.*
+*.env
+*.env.*
+*.env.local
+*.env.*.local
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# Allow committed example environment templates
+!.env.example
+!*.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# ------------------------------------------
 # Databases & SQLite
+# ------------------------------------------
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
 ecosort.db
 backend/ecosort.db
 
-# Node dependencies & builds
+# ------------------------------------------
+# Node.js & Frontend (Vite, React, TypeScript)
+# ------------------------------------------
 node_modules/
+frontend/node_modules/
 dist/
+frontend/dist/
 dist-ssr/
+frontend/dist-ssr/
 *.local
+.vite/
+frontend/.vite/
 
-# Python artifacts
+# Frontend test, audit & lint caches
+lighthouse-report*.json
+*-lighthouse-report.json
+frontend/lighthouse-report*.json
+coverage/
+*.lcov
+.nyc_output/
+.eslintcache
+.oxlint_cache
+.oxlintcache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------
+# Python Backend (FastAPI, SQLAlchemy, Pytest)
+# ------------------------------------------
+# Bytecode and caches
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
 backend/__pycache__/
 backend/*/__pycache__/
+
+# Virtual environments
 venv/
 backend/venv/
+.venv/
+backend/.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Type checking
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
 
-# OS and Editor files
+# Packaging & build artifacts
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Runtime uploads (classification images generated dynamically)
+backend/uploads/*
+!backend/uploads/0b69805c700e456f8ceae6d8cdf9f300.jpeg
+!backend/uploads/390f6bc000fb4d1ba47db58eecee7afa.jpg
+!backend/uploads/4d738c28da92419fb24699c982b8ebf8.jpeg
+!backend/uploads/86453d72439b40e38adccd17a72918e7.jpeg
+!backend/uploads/9c1f53688c3848709eb0d5d2f931ffb1.jpeg
+!backend/uploads/bc045c53123c481ca34630871d98e385.jpg
+!backend/uploads/c5ca913ad9e34a8e8819465afc98ae48.jpeg
+!backend/uploads/ce6411a641f74fa383517e2c494aaaae.webp
+!backend/uploads/e64b37b5f34c4d74a8657284cf384c10.jpeg
+!backend/uploads/e65c01d0d51c4a7d9d59d835b0871c6a.webp
+!backend/uploads/.gitkeep
+
+# ------------------------------------------
+# Supabase Local Development
+# ------------------------------------------
+.branches/
+supabase/.branches/
+
+# ------------------------------------------
+# Operating System & Editor Files
+# ------------------------------------------
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
-.vscode/
-.idea/
-*.log
+ehthumbs.db
+Desktop.ini
 
+# IDEs and Editors
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+*~
+*.bak
+*.tmp

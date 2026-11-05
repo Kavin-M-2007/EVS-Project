@@ -59,7 +59,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6F4] flex flex-col justify-center items-center p-4 relative overflow-hidden">
+    <main className="min-h-screen bg-[#F5F6F4] flex flex-col justify-center items-center p-4 relative overflow-hidden">
       {/* Background Floating Eco Particle Accents */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <motion.div
@@ -161,8 +161,9 @@ export const LoginPage: React.FC = () => {
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -221,7 +222,7 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 

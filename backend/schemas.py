@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List, Any, Union
 from datetime import datetime
 
@@ -47,8 +47,7 @@ class UserResponse(UserBase):
     last_login: Optional[datetime] = None
     municipality_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Municipality Schemas
 class MunicipalityBase(BaseModel):
@@ -69,8 +68,7 @@ class MunicipalityResponse(MunicipalityBase):
     total_bins: Optional[int] = 0
     active_collectors: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Smart Bin Schemas
 class SmartBinBase(BaseModel):
@@ -105,8 +103,7 @@ class SmartBinResponse(SmartBinBase):
     updated_at: datetime
     municipality_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Collection Task Schemas
 class CollectionTaskBase(BaseModel):
@@ -141,8 +138,7 @@ class CollectionTaskResponse(CollectionTaskBase):
     route_name: Optional[str] = None
     municipality_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Classification Schemas
 class ClassificationResponse(BaseModel):
@@ -208,8 +204,7 @@ class ComplaintResponse(ComplaintCreate):
     resolved_at: Optional[datetime] = None
     municipality_name: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Notification Schemas
 class NotificationResponse(BaseModel):
@@ -221,8 +216,7 @@ class NotificationResponse(BaseModel):
     created_at: datetime
     role_target: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Audit Log Schema
 class AuditLogResponse(BaseModel):
@@ -236,6 +230,5 @@ class AuditLogResponse(BaseModel):
     ip_address: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 

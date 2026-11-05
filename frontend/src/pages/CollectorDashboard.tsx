@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   CheckCircle,
@@ -33,11 +33,18 @@ export const CollectorDashboard: React.FC = () => {
   const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [isCollectingBin, setIsCollectingBin] = useState<string | number | null>(null);
   const [reportSuccess, setReportSuccess] = useState('');
+  const [reportError, setReportError] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadCollectorData = async () => {
+  useEffect(() => {
+    return () => {
+      if (proofPreview) URL.revokeObjectURL(proofPreview);
+    };
+  }, [proofPreview]);
+
+  const loadCollectorData = useCallback(async () => {
     try {
       const [tList, bList, summ] = await Promise.all([
         api.getTasks(),
@@ -51,16 +58,17 @@ export const CollectorDashboard: React.FC = () => {
         const active = tList.find((t) => t.status === 'In Progress' || t.status === 'IN_PROGRESS') || tList[0];
         setActiveTask(active);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setReportError(e.message || 'Failed to load collector schedule.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadCollectorData();
-  }, [user]);
+  }, [loadCollectorData]);
 
   // Supabase Realtime subscription for tasks
   useEffect(() => {
@@ -68,11 +76,12 @@ export const CollectorDashboard: React.FC = () => {
       loadCollectorData();
     });
     return () => unsub();
-  }, []);
+  }, [loadCollectorData]);
 
   // Status transition handler: Assigned -> Accepted -> In Progress -> Collected -> Completed
   const handleTransitionStatus = async (targetStatus: string) => {
     if (!activeTask) return;
+    setReportError('');
     try {
       await api.updateTaskStatus(activeTask.id, targetStatus);
       if (targetStatus === 'Completed' || targetStatus === 'COMPLETED') {
@@ -82,7 +91,8 @@ export const CollectorDashboard: React.FC = () => {
       setReportSuccess(`Task updated to ${targetStatus}`);
       setTimeout(() => setReportSuccess(''), 3000);
     } catch (e: any) {
-      alert(e.message || 'Status update failed.');
+      setReportError(e.message || 'Status update failed.');
+      setTimeout(() => setReportError(''), 5000);
     }
   };
 
@@ -90,6 +100,7 @@ export const CollectorDashboard: React.FC = () => {
   const handleCollectBin = async (bin: SmartBin) => {
     if (isCollectingBin) return;
     setIsCollectingBin(bin.id);
+    setReportError('');
 
     try {
       if (activeTask) {
@@ -113,7 +124,8 @@ export const CollectorDashboard: React.FC = () => {
       setTimeout(() => setReportSuccess(''), 4000);
       await loadCollectorData();
     } catch (e: any) {
-      alert(e.message || 'Failed to update bin collection.');
+      setReportError(e.message || 'Failed to update bin collection.');
+      setTimeout(() => setReportError(''), 5000);
     } finally {
       setIsCollectingBin(null);
     }
@@ -123,6 +135,7 @@ export const CollectorDashboard: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (proofPreview) URL.revokeObjectURL(proofPreview);
       setSelectedProofFile(file);
       setProofPreview(URL.createObjectURL(file));
     }

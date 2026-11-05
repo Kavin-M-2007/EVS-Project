@@ -2,16 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   Trash2,
   Search,
-  Filter,
   Battery,
   Thermometer,
   Weight,
-  Clock,
-  MapPin,
   RefreshCw,
   Plus,
   AlertTriangle,
-  ArrowRight,
   Edit2,
   Trash,
   ArrowUpDown,
@@ -21,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../services/api';
 import { SmartBin, Sector } from '../types';
 import { BinStatusBadge } from '../components/common/StatusBadge';
+import { CardSkeleton } from '../components/common/SkeletonLoader';
 import { useAuth } from '../context/AuthContext';
 
 export const SmartBinsPage: React.FC = () => {
@@ -37,6 +34,7 @@ export const SmartBinsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -121,7 +119,8 @@ export const SmartBinsPage: React.FC = () => {
       setActionSuccess(`[Simulated IoT Test] Fill level set to ${newFill}%`);
       setTimeout(() => setActionSuccess(null), 3000);
     } catch (e: any) {
-      alert(e.message || 'Update failed');
+      setActionError(e.message || 'Update failed');
+      setTimeout(() => setActionError(null), 4000);
     } finally {
       setIsUpdating(false);
     }
@@ -224,7 +223,8 @@ export const SmartBinsPage: React.FC = () => {
       setActionSuccess('Bin record removed.');
       setTimeout(() => setActionSuccess(null), 3000);
     } catch (err: any) {
-      alert(err.message || 'Could not delete bin.');
+      setActionError(err.message || 'Could not delete bin.');
+      setTimeout(() => setActionError(null), 4000);
     }
   };
 
@@ -257,6 +257,17 @@ export const SmartBinsPage: React.FC = () => {
         >
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           <span>{actionSuccess}</span>
+        </motion.div>
+      )}
+
+      {actionError && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-red-50 text-red-800 border border-red-200 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-xs"
+        >
+          <AlertTriangle className="w-4 h-4 text-red-600" />
+          <span>{actionError}</span>
         </motion.div>
       )}
 
@@ -384,9 +395,10 @@ export const SmartBinsPage: React.FC = () => {
 
       {/* Grid of Smart Bins */}
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center">
-          <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-2" />
-          <p className="text-xs text-slate-400">Loading smart bin records from database...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       ) : filteredBins.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-[#E7EBE7] space-y-3">

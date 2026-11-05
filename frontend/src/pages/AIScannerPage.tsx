@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
   UploadCloud,
   Camera,
   CheckCircle,
   AlertCircle,
-  ArrowRight,
   RefreshCw,
   Info,
   HelpCircle
@@ -32,9 +31,20 @@ export const AIScannerPage: React.FC = () => {
     { name: 'Li-Ion Battery', filename: 'lithium_phone_battery.jpg', type: 'E-Waste' },
   ];
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setResult(null);
@@ -43,6 +53,9 @@ export const AIScannerPage: React.FC = () => {
   };
 
   const handleSelectSample = (sample: typeof sampleItems[0]) => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
     // create fake file object with matching filename
     const blob = new Blob(['sample-content'], { type: 'image/jpeg' });
     const file = new File([blob], sample.filename, { type: 'image/jpeg' });
@@ -310,6 +323,24 @@ export const AIScannerPage: React.FC = () => {
                 <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
                   Select a waste image or choose one of the quick test sample items to view neural classification breakdown.
                 </p>
+              </div>
+            )}
+
+            {recentScans.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-slate-100">
+                <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Recent Inferences</span>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {recentScans.map((scan, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setResult(scan)}
+                      className="text-[10px] font-medium px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {scan.fine_class}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
