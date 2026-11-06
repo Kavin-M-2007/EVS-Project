@@ -26,6 +26,7 @@ class Settings(BaseSettings):
 
     # AI Vision Classifier
     GEMINI_API_KEY: Optional[str] = None
+    GET_API_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(__file__), ".env"),

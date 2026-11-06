@@ -167,8 +167,18 @@ class AIWasteClassifier:
     If an actual model is not configured, clearly show that the AI service is unavailable.'
     """
 
+    def get_api_key(self) -> str:
+        key = os.getenv("GEMINI_API_KEY") or os.getenv("GET_API_KEY") or ""
+        if not key:
+            try:
+                from config import settings
+                key = getattr(settings, "GEMINI_API_KEY", "") or getattr(settings, "GET_API_KEY", "") or ""
+            except Exception:
+                pass
+        return key.strip() if key else ""
+
     def __init__(self):
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        self.gemini_api_key = self.get_api_key()
         self.is_configured = bool(self.gemini_api_key)
         self.taxonomy = WASTE_TAXONOMY
 
@@ -177,7 +187,8 @@ class AIWasteClassifier:
         Runs image classification. If GEMINI_API_KEY is present, executes live Gemini vision inference.
         If no API key is configured, returns an explicit setup-required response.
         """
-        if not self.gemini_api_key:
+        api_key = self.get_api_key() or self.gemini_api_key
+        if not api_key:
             return {
                 "service_available": False,
                 "status": "MODEL_NOT_CONFIGURED",
@@ -192,7 +203,7 @@ class AIWasteClassifier:
             }
 
         try:
-            # Prepare image payload for Gemini 1.5 Flash / Pro
+            # Prepare image payload for Gemini Vision
             b64_image = base64.b64encode(file_bytes).decode("utf-8")
             ext = os.path.splitext(filename)[1].lower()
             mime = "image/jpeg" if ext in (".jpg", ".jpeg") else ("image/png" if ext == ".png" else "image/webp")
@@ -210,7 +221,6 @@ class AIWasteClassifier:
                 "}"
             )
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
             payload = {
                 "contents": [
                     {
@@ -231,28 +241,44 @@ class AIWasteClassifier:
                 }
             }
 
-            resp = requests.post(url, json=payload, timeout=12)
-            if resp.status_code == 200:
-                result_json = resp.json()
-                text_content = result_json["candidates"][0]["content"]["parts"][0]["text"]
-                parsed = json.loads(text_content)
-                parsed["service_available"] = True
-                parsed["status"] = "SUCCESS"
-                parsed["model_mode"] = "GEMINI_VISION_PIPELINE"
-                return parsed
-            else:
-                return {
-                    "service_available": False,
-                    "status": "API_ERROR",
-                    "message": f"Gemini API returned status code {resp.status_code}",
-                    "fine_class": "Error Processing Image",
-                    "binary_category": "Non-Biodegradable",
-                    "broad_category": "Other",
-                    "confidence_score": 0.0,
-                    "disposal_guide": "Manual sorting required.",
-                    "recycling_guide": "Manual inspection required.",
-                    "model_mode": "API_ERROR"
-                }
+            models_to_try = [
+                "gemini-3.5-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-flash-latest",
+                "gemini-1.5-flash"
+            ]
+
+            last_error = "No response from Gemini API"
+            for model_name in models_to_try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                try:
+                    resp = requests.post(url, json=payload, timeout=15)
+                    if resp.status_code == 200:
+                        result_json = resp.json()
+                        text_content = result_json["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(text_content)
+                        parsed["service_available"] = True
+                        parsed["status"] = "SUCCESS"
+                        parsed["model_mode"] = "GEMINI_VISION_PIPELINE"
+                        return parsed
+                    else:
+                        last_error = f"Gemini API ({model_name}) returned status code {resp.status_code}"
+                except requests.exceptions.RequestException as req_err:
+                    last_error = str(req_err)
+                    continue
+
+            return {
+                "service_available": False,
+                "status": "API_ERROR",
+                "message": last_error,
+                "fine_class": "Error Processing Image",
+                "binary_category": "Non-Biodegradable",
+                "broad_category": "Other",
+                "confidence_score": 0.0,
+                "disposal_guide": "Manual sorting required.",
+                "recycling_guide": "Manual inspection required.",
+                "model_mode": "API_ERROR"
+            }
         except Exception as e:
             return {
                 "service_available": False,
